@@ -1,2 +1,2 @@
 pm2 stop assethubbackend
-pm2 start /u01/ahweb/backend/bin/assethubbackend --watch
+pm2 start /u03/ahweb/assethub/backend/bin/assethubbackend --watch
