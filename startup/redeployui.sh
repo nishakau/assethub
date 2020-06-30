@@ -1,6 +1,6 @@
 cd ..
-sudo zip -r backup/build.zip html/*
-sudo rm -Rf build html/*
+#sudo zip -r backup/build.zip html/*
+#sudo rm -Rf build html/*
 unzip build.zip
 echo "zip inflated . . ."
 sudo mv -f build/* html/
