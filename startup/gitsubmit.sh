@@ -1,5 +1,5 @@
-git add /u03/ahweb/assethub/*
-git reset /u03/ahweb/assethub/backend/node_modules/*
+git add /u01/ahweb/*
+git reset /u01/ahweb/backend/node_modules/*
 git commit -m "dev code sync"
 git push --force
 
