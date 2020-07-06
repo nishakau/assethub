@@ -10,6 +10,10 @@ let stringSimilarity = require('string-similarity');
 const fs = require('fs');
 const cluster = require('express-cluster');
 
+//oci related stuff comes here
+const ociConfig = require("../config/oci");
+const client = ociConfig.client;
+
 
 const generateFileName = (sampleFile, assetId, filesArray, imageDescription) => {
     let imgObject = {};
@@ -948,7 +952,74 @@ module.exports = class Asset {
                 })
         })
     }
-    static uploadDoc(host, data, file) {
+
+    static async uploadDoc(host,data,file){
+        const connection = await getDb();
+        let fname = file.name.split('.')[0];
+        fname = fname.replace(/ /g, '');
+        const ftype = file.name.split('.')[1];
+        const uniqueId = uniqid();
+        const finalFname = fname + uniqueId.concat('.', ftype);
+        const uploadPath = path.join('/', 'mnt/ahfs/assets', data.assetId, finalFname);
+            var content = 'http://' + host + '/' + 'assets/' + data.assetId + "/" + finalFname;
+        try{
+            console.log("Getting the namespace...");
+            const request = {};
+            const response = await client.getNamespace(request);
+            const namespace = response.value;
+            //const namespace= "orasenatdpltinfomgmt03";
+            console.log(namespace);
+            console.log("Creating the source bucket.");
+            let bucket=data.assetId;
+            const bucketDetails = {
+                name: bucket,
+                compartmentId: ociConfig.compartmentId
+            };
+            console.log(bucketDetails);
+            const createBucketRequest = {
+                    namespaceName: namespace,
+                    createBucketDetails: bucketDetails
+                };
+            const createBucketResponse = await client.createBucket(createBucketRequest);
+            console.log("Create Bucket executed successfully" + createBucketResponse);
+            const getBucketRequest = {
+                namespaceName: namespace,
+                bucketName: bucket
+              };
+            const getBucketResponse = await client.getBucket(getBucketRequest);
+            console.log("Verifed bucket creation");
+
+
+             // Create stream to upload
+            //const fileLocation = "/Users/File/location";
+            const stats = fs.statSync(file);
+            const objectData = fs.createReadStream(file);
+
+            console.log("Bucket is created. Now adding object to the Bucket.");
+            const object = finalFname;
+            const putObjectRequest = {
+            namespaceName: namespace,
+            bucketName: bucket,
+            putObjectBody: objectData,
+            objectName: object,
+            contentLength: stats.size
+            };
+            const putObjectResponse = await client.putObject(putObjectRequest);
+            console.log("Put Object executed successfully" + putObjectResponse);
+            await connection.update(`INSERT into ASSET_LINKS(LINK_URL_TYPE,LINK_URL,LINK_REPOS_TYPE,LINK_DESCRIPTION,LINK_DESCRIPTION_DATA,DEPLOY_STATUS,LINK_ID,ASSET_ID) values(
+                :LINK_URL_TYPE,:LINK_URL,:LINK_REPOS_TYPE,:LINK_DESCRIPTION,:LINK_DESCRIPTION_DATA,:DEPLOY_STATUS,:LINK_ID,:ASSET_ID)
+              `, [data.LINK_URL_TYPE, content, data.LINK_REPOS_TYPE, data.LINK_DESCRIPTION, data.LINK_DESCRIPTION_DATA, 0, uniqueId, data.assetId],
+                {
+                    outFormat: oracledb.Object,
+                    autoCommit: true
+                });
+            return "working";
+
+        }catch(e){
+            console.log("OCI Upload Failed");
+        }
+    }
+    /*static uploadDoc(host, data, file) {
         return new Promise((resolve, reject) => {
             const connection = getDb();
             let fname = file.name.split('.')[0];
@@ -1008,7 +1079,7 @@ module.exports = class Asset {
                 })
         })
     }
-
+*/
 
     static createFile(file, path) {
         console.log("Calling file create " + path);
