@@ -990,19 +990,19 @@ module.exports = class Asset {
             console.log("Verifed bucket creation");
 
 
-             // Create stream to upload
-            //const fileLocation = "/Users/File/location";
-            const stats = fs.statSync(file);
-            const objectData = fs.createReadStream(file);
+            
+            const object = finalFname;
+            const objectData = file.data;
+            const fileSize = file.size;
 
             console.log("Bucket is created. Now adding object to the Bucket.");
-            const object = finalFname;
+            
             const putObjectRequest = {
             namespaceName: namespace,
             bucketName: bucket,
             putObjectBody: objectData,
             objectName: object,
-            contentLength: stats.size
+            contentLength: fileSize
             };
             const putObjectResponse = await client.putObject(putObjectRequest);
             console.log("Put Object executed successfully" + putObjectResponse);
