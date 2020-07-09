@@ -963,39 +963,36 @@ module.exports = class Asset {
         const uploadPath = path.join('/', 'mnt/ahfs/assets', data.assetId, finalFname);
             var content = 'http://' + host + '/' + 'assets/' + data.assetId + "/" + finalFname;
         try{
-            console.log("Getting the namespace...");
-            const request = {};
-            const response = await client.getNamespace(request);
-            const namespace = response.value;
-            //const namespace= "orasenatdpltinfomgmt03";
-            console.log(namespace);
-            console.log("Creating the source bucket.");
+            
+            const namespace = ociConfig.namespace;
+
             let bucket=data.assetId;
-            const bucketDetails = {
-                name: bucket,
-                compartmentId: ociConfig.compartmentId
-            };
-            console.log(bucketDetails);
-            const createBucketRequest = {
+            try{
+                const getBucketRequest = {
                     namespaceName: namespace,
-                    createBucketDetails: bucketDetails
-                };
-            const createBucketResponse = await client.createBucket(createBucketRequest);
-            console.log("Create Bucket executed successfully" + createBucketResponse);
-            const getBucketRequest = {
-                namespaceName: namespace,
-                bucketName: bucket
-              };
-            const getBucketResponse = await client.getBucket(getBucketRequest);
-            console.log("Verifed bucket creation");
+                    bucketName: bucket
+                  };
+                await client.getBucket(getBucketRequest);
+                console.log("Bucket found");
 
-
+            }catch(e){
+                if(e.serviceCode =='BucketNotFound'){
+                    console.log("Creating a new bucket");
+                    const bucketDetails = {
+                        name: bucket,
+                        compartmentId: ociConfig.compartmentId
+                    };
+                    const createBucketRequest = {
+                        namespaceName: namespace,
+                        createBucketDetails: bucketDetails
+                    };
+                    await client.createBucket(createBucketRequest);
+                }else throw e;
+            }
             
             const object = finalFname;
             const objectData = file.data;
             const fileSize = file.size;
-
-            console.log("Bucket is created. Now adding object to the Bucket.");
             
             const putObjectRequest = {
             namespaceName: namespace,
@@ -1013,6 +1010,7 @@ module.exports = class Asset {
                     outFormat: oracledb.Object,
                     autoCommit: true
                 });
+            console.log("Document inserted Successfully");
             return "working";
 
         }catch(e){
