@@ -15,6 +15,56 @@ const ociConfig = require("../config/oci");
 const client = ociConfig.client;
 
 
+/**
+ * Method to put any file to the Object Storage
+ * Accepts - three parameters - Bucket Name , File , FileName
+ * Returns Promise
+ */
+async function putFileInBucket(assetId,file,finalFname){
+        
+        const namespace = ociConfig.namespace;
+        let bucket=assetId;
+        
+        try{
+                const getBucketRequest = {
+                    namespaceName: namespace,
+                    bucketName: bucket
+                  };
+                await client.getBucket(getBucketRequest);
+                console.log("Bucket found");
+
+            }catch(e){
+                if(e.serviceCode =='BucketNotFound'){
+                    console.log("Creating a new bucket");
+                    const bucketDetails = {
+                        name: bucket,
+                        compartmentId: ociConfig.compartmentId
+                    };
+                    const createBucketRequest = {
+                        namespaceName: namespace,
+                        createBucketDetails: bucketDetails
+                    };
+                    await client.createBucket(createBucketRequest);
+                }else throw e;
+            }
+            
+            const object = finalFname;
+            const objectData = file.data;
+            const fileSize = file.size;
+            
+            const putObjectRequest = {
+            namespaceName: namespace,
+            bucketName: bucket,
+            putObjectBody: objectData,
+            objectName: object,
+            contentLength: fileSize
+            };
+           await client.putObject(putObjectRequest);
+           console.log("Inserted into the bucket");
+
+}
+
+
 const generateFileName = (sampleFile, assetId, filesArray, imageDescription) => {
     let imgObject = {};
     let fname = sampleFile.name.split('.')[0];
@@ -35,35 +85,12 @@ const generateFileName = (sampleFile, assetId, filesArray, imageDescription) => 
     imgObject = {}
 
     try {
-        console.log("---------  FOLDER CREATION for thumbnail ----------")
-        const baseresoursePath = path.join('/', 'mnt/ahfs/assets', assetId);
-        console.log("projected path " + baseresoursePath);
-
-        fs.open(baseresoursePath, 'r', (err) => {
+        putFileInBucket(assetId,sampleFile,finalFname,function(err){
             if (err) {
-                if (err.code === 'ENOENT') {
-                    console.log('folder does not exist');
-
-                    if (!fs.existsSync(baseresoursePath)) {
-                        fs.mkdirSync(baseresoursePath);
-                        console.log("Calling file create " + uploadPath);
-                        sampleFile.mv(uploadPath, function (err) {
-                            if (err) {
-                                return res.status(500).send(err);
-                            }
-                        })
-                    }
-
-                }
-            } else {
-                console.log("Calling file create " + uploadPath);
-                sampleFile.mv(uploadPath, function (err) {
-                    if (err) {
-                        return res.status(500).send(err);
-                    }
-                })
+                return res.status(500).send(err);
             }
         });
+       
 
     } catch (err) {
         console.log("Folder creation failed " + err.message);
@@ -795,35 +822,13 @@ module.exports = class Asset {
                 // })
 
                 try {
-                    console.log("---------  FOLDER CREATION for thumbnail ----------")
-                    const baseresoursePath = path.join('/', 'mnt/ahfs/assets', assetId);
-                    console.log("projected path " + baseresoursePath);
 
-                    fs.open(baseresoursePath, 'r', (err) => {
+                    putFileInBucket(assetId,thumbnail,finalFname,function(err){
                         if (err) {
-                            if (err.code === 'ENOENT') {
-                                console.log('folder does not exist');
-
-                                if (!fs.existsSync(baseresoursePath)) {
-                                    fs.mkdirSync(baseresoursePath);
-                                    console.log("Calling file create " + uploadPath);
-                                    thumbnail.mv(uploadPath, function (err) {
-                                        if (err) {
-                                            return res.status(500).send(err);
-                                        }
-                                    })
-                                }
-
-                            }
-                        } else {
-                            console.log("Calling file create " + uploadPath);
-                            thumbnail.mv(uploadPath, function (err) {
-                                if (err) {
-                                    return res.status(500).send(err);
-                                }
-                            })
+                            return res.status(500).send(err);
                         }
                     });
+                   
 
                 } catch (err) {
                     console.log("Folder creation failed " + err.message);
@@ -934,12 +939,12 @@ module.exports = class Asset {
             const uniqueId = uniqid();
             const finalFname = fname + uniqueId.concat('.', ftype);
             const uploadPath = path.join(__dirname, '../../../..', 'mnt/ahfs/', finalFname);
-            var content = `${finalFname}`
-            video.mv(uploadPath, function (err) {
+            var content = `${finalFname}`;
+            putFileInBucket(assetId,video,finalFname,function(err){
                 if (err) {
                     return res.status(500).send(err);
                 }
-            })
+            });
             connection.update(`UPDATE ASSET_DETAILS set 
         ASSET_VIDEO_URL=:ASSET_VIDEO_URL
              WHERE ASSET_ID=:ASSET_ID`, [content, assetId],
