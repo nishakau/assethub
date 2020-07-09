@@ -28,6 +28,7 @@
     "oracledb": "^3.1.2",
     "simple-oracledb": "^1.4.1",
     "string-similarity": "^3.0.0",
-    "uniqid": "^5.0.3"
+    "uniqid": "^5.0.3",
+    "oci-sdk": "^1.2.0"
   }
 }
