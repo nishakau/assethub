@@ -15,7 +15,9 @@ exports.getFileFromBucket = async (request,response)=>{
         const getObjectResponse = await client.getObject(getObjectRequest);
         console.log("File found");
         response.send(getObjectResponse);
+        response.end();
       }catch(e){
         console.log("Unable to fetch file");
+        response.end();
       }
 }
