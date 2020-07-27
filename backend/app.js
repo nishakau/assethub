@@ -21,7 +21,6 @@ var winstoryrouter = require('./routes/winstoryRoute');
 var userrouter = require('./routes/userRoute');
 var governancerouter = require('./routes/governanceRoute');
 var adminrouter = require('./routes/adminRoute');
-var ocirouter = require('./routes/ociRoute');
 let port=8001;
 
 var app = express();
@@ -42,7 +41,6 @@ app.use('/winstory', winstoryrouter);
 app.use('/user', userrouter);
 app.use('/governance', governancerouter);
 app.use('/admin', adminrouter);
-app.use('/oci',ocirouter);
 
 app.use(log4js.connectLogger(log4js.getLogger("http"), { level: 'debug' }));
 
