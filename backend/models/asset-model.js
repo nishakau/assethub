@@ -2592,7 +2592,7 @@ module.exports = class Asset {
                                                         // console.log(JSON.stringify(filteredArr));
                                                         if (filterObj != undefined) {
                                                             filteredArr = filters.filter(f => f.FILTER_TYPE != null && f.FILTER_TYPE === type && f.FILTER_NAME != null && !f.FILTER_NAME.toLowerCase().includes('other'));
-
+                                                            if(filteredArr.length<1) return;
                                                             filterObj.Type = type;
                                                             filterObj.FILTER_TYPE_IMAGE = 'http://' + host + '/' + filteredArr[0].FILTER_TYPE_IMAGE;
                                                             filteredArr.sort((a, b) => (a.FILTER_NAME > b.FILTER_NAME) ? 1 : -1)
