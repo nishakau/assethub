@@ -2615,10 +2615,10 @@ module.exports = class Asset {
                                                                 f.FILTER_IMAGE = 'http://' + host + '/' + f.FILTER_IMAGE;
                                                             })
                                                             filterObj.filters = filteredArr;
-
-                                                            if (filterObj.Type != "Asset Type") {
+                                                            //Commented below condition as part of sprint-1 to get the filters related to Asset type as well
+                                                            //if (filterObj.Type != "Asset Type") {
                                                                 allFilters.push(filterObj);
-                                                            }
+                                                            //}
 
                                                             filterObj = {};
                                                         }
