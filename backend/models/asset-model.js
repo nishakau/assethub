@@ -2504,7 +2504,7 @@ module.exports = class Asset {
         let typeCountArr = [];
         let winstorytypeCountArr = [];
         let sugestionsarr = [];
-        let getSecondaryFilters = new Array();
+        let secondaryFilterResult = new Array();
         return new Promise((resolve, reject) => {
             const connection = getDb();
             connection.query(`select filter_id from asset_filter where filter_id in (Select asset_filter_id from asset_preferences where USER_EMAIL=:USER_EMAIL)`, [user_email],
@@ -2566,14 +2566,13 @@ module.exports = class Asset {
                                         })
                                         .then(result => {
                                             winstorycountArr = result;
-                                            getSecondaryFilters = `select * from asset_filter_secondary where FILTER_STATUS in('1')`;
-                                            connection.query(getFilterSQL, [], {
+                                            
+                                            connection.query(`select * from asset_filter_secondary where FILTER_STATUS in('1')`, [], {
                                                 outFormat: oracledb.OBJECT,
                                             })
                                                 .then((result) => {
-                                                var secondaryFilterResult = result;
-                                                var filterIds = result.map((id) => id.FILTER_ID);
-                                                var filterIdNoDuplicate = [...new Set(filterIds)];
+                                                secondaryFilterResult = result;
+                                                
 
                                             let getFilterSQL;
                                             if (platform == "w") {
