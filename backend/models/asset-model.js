@@ -2504,6 +2504,7 @@ module.exports = class Asset {
         let typeCountArr = [];
         let winstorytypeCountArr = [];
         let sugestionsarr = [];
+        let getSecondaryFilters = new Array();
         return new Promise((resolve, reject) => {
             const connection = getDb();
             connection.query(`select filter_id from asset_filter where filter_id in (Select asset_filter_id from asset_preferences where USER_EMAIL=:USER_EMAIL)`, [user_email],
