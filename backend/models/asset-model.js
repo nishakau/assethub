@@ -2615,10 +2615,8 @@ module.exports = class Asset {
                                                                 })
                                                             }
                                                             filteredArr.forEach(f => {
-                                                                var secondaryArray = secondaryFilterResult.filter(temp=>{
-                                                                    temp.FILTER_ID == f.FILTER_ID
-                                                                });
-                                                                f.secondary = secondaryArray;
+                                                                var secondaryArray = secondaryFilterResult.filter(temp=>temp.FILTER_ID === f.FILTER_ID);
+                                                                f.SECONDARY = secondaryArray;
                                                                 typeCountArr = countArr.filter(r => r.FILTER_ID === f.FILTER_ID)
                                                                 winstorytypeCountArr = winstorycountArr.filter(r => r.FILTER_ID === f.FILTER_ID)
                                                                 f.ASSET_COUNT = typeCountArr[0].CNT
