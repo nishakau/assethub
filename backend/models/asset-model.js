@@ -2504,7 +2504,6 @@ module.exports = class Asset {
         let typeCountArr = [];
         let winstorytypeCountArr = [];
         let sugestionsarr = [];
-        let secondaryFilterResult = new Array();
         return new Promise((resolve, reject) => {
             const connection = getDb();
             connection.query(`select filter_id from asset_filter where filter_id in (Select asset_filter_id from asset_preferences where USER_EMAIL=:USER_EMAIL)`, [user_email],
@@ -2566,14 +2565,6 @@ module.exports = class Asset {
                                         })
                                         .then(result => {
                                             winstorycountArr = result;
-                                            
-                                            connection.query(`select * from asset_filter_secondary where FILTER_STATUS in('1')`, [], {
-                                                outFormat: oracledb.OBJECT,
-                                            })
-                                                .then((result) => {
-                                                secondaryFilterResult = result;
-                                                
-
                                             let getFilterSQL;
                                             if (platform == "w") {
                                                 getFilterSQL = `select * from asset_filter where FILTER_STATUS in('1','-1')`;
@@ -2600,12 +2591,12 @@ module.exports = class Asset {
                                                         console.log(JSON.stringify(type));
                                                         // console.log(JSON.stringify(filteredArr));
                                                         if (filterObj != undefined) {
-                                                            filteredArr = filters.filter(f => f.FILTER_TYPE != null && f.FILTER_TYPE === type && f.FILTER_NAME != null && !f.FILTER_NAME.toLowerCase().includes('other'));
+                                                            filteredArr = filters.filter(f => f.FILTER_TYPE != null && f.FILTER_TYPE === type && f.FILTER_NAME != null && !f.FILTER_NAME.toLowerCase().includes('other') && f.SEC_FILTER_NAME==null);
                                                             if(filteredArr.length<1) return;
                                                             filterObj.Type = type;
                                                             filterObj.FILTER_TYPE_IMAGE = 'http://' + host + '/' + filteredArr[0].FILTER_TYPE_IMAGE;
                                                             filteredArr.sort((a, b) => (a.FILTER_NAME > b.FILTER_NAME) ? 1 : -1)
-                                                            const otherArr = filters.filter(f => f.FILTER_TYPE != null && f.FILTER_TYPE === type && f.FILTER_NAME != null && f.FILTER_NAME.toLowerCase().includes('other'))
+                                                            const otherArr = filters.filter(f => f.FILTER_TYPE != null && f.FILTER_TYPE === type && f.FILTER_NAME != null && f.FILTER_NAME.toLowerCase().includes('other') && f.SEC_FILTER_NAME==null)
                                                             if (otherArr.length === 1) {
                                                                 filteredArr.push(otherArr[0]);
                                                             }
@@ -2615,7 +2606,7 @@ module.exports = class Asset {
                                                                 })
                                                             }
                                                             filteredArr.forEach(f => {
-                                                                var secondaryArray = secondaryFilterResult.filter(temp=>temp.FILTER_ID === f.FILTER_ID);
+                                                                var secondaryArray = filters.filter(temp=>temp.FILTER_TYPE === type && temp.FILTER_NAME === f.FILTER_NAME && temp.SEC_FILTER_NAME !=null);
                                                                 f.SECONDARY = secondaryArray;
                                                                 typeCountArr = countArr.filter(r => r.FILTER_ID === f.FILTER_ID)
                                                                 winstorytypeCountArr = winstorycountArr.filter(r => r.FILTER_ID === f.FILTER_ID)
@@ -2643,7 +2634,7 @@ module.exports = class Asset {
                                                     reject(err)
 
                                                 })
-                                                })
+                                            
                                         })
                                 })
                         })
