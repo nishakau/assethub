@@ -2565,6 +2565,15 @@ module.exports = class Asset {
                                         })
                                         .then(result => {
                                             winstorycountArr = result;
+                                            getSecondaryFilters = `select * from asset_filter_secondary where FILTER_STATUS in('1')`;
+                                            connection.query(getFilterSQL, [], {
+                                                outFormat: oracledb.OBJECT,
+                                            })
+                                                .then((result) => {
+                                                var secondaryFilterResult = result;
+                                                var filterIds = result.map((id) => id.FILTER_ID);
+                                                var filterIdNoDuplicate = [...new Set(filterIds)];
+
                                             let getFilterSQL;
                                             if (platform == "w") {
                                                 getFilterSQL = `select * from asset_filter where FILTER_STATUS in('1','-1')`;
@@ -2606,6 +2615,10 @@ module.exports = class Asset {
                                                                 })
                                                             }
                                                             filteredArr.forEach(f => {
+                                                                var secondaryArray = secondaryFilterResult.filter(temp=>{
+                                                                    temp.FILTER_ID == f.FILTER_ID
+                                                                });
+                                                                f.secondary = secondaryArray;
                                                                 typeCountArr = countArr.filter(r => r.FILTER_ID === f.FILTER_ID)
                                                                 winstorytypeCountArr = winstorycountArr.filter(r => r.FILTER_ID === f.FILTER_ID)
                                                                 f.ASSET_COUNT = typeCountArr[0].CNT
@@ -2631,6 +2644,7 @@ module.exports = class Asset {
                                                 .catch(err => {
                                                     reject(err)
 
+                                                })
                                                 })
                                         })
                                 })
