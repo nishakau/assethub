@@ -10,60 +10,6 @@ let stringSimilarity = require('string-similarity');
 const fs = require('fs');
 const cluster = require('express-cluster');
 
-//oci related stuff comes here
-const ociConfig = require("../config/oci");
-const client = ociConfig.client;
-
-
-/**
- * Method to put any file to the Object Storage
- * Accepts - three parameters - Bucket Name , File , FileName
- * Returns Promise
- */
-async function putFileInBucket(assetId,file,finalFname){
-        
-        const namespace = ociConfig.namespace;
-        let bucket=assetId;
-        
-        try{
-                const getBucketRequest = {
-                    namespaceName: namespace,
-                    bucketName: bucket
-                  };
-                await client.getBucket(getBucketRequest);
-                console.log("Bucket found");
-
-            }catch(e){
-                if(e.serviceCode =='BucketNotFound'){
-                    console.log("Creating a new bucket");
-                    const bucketDetails = {
-                        name: bucket,
-                        compartmentId: ociConfig.compartmentId
-                    };
-                    const createBucketRequest = {
-                        namespaceName: namespace,
-                        createBucketDetails: bucketDetails
-                    };
-                    await client.createBucket(createBucketRequest);
-                }else throw e;
-            }
-            
-            const object = finalFname;
-            const objectData = file.data;
-            const fileSize = file.size;
-            
-            const putObjectRequest = {
-            namespaceName: namespace,
-            bucketName: bucket,
-            putObjectBody: objectData,
-            objectName: object,
-            contentLength: fileSize
-            };
-           await client.putObject(putObjectRequest);
-           console.log("Inserted into the bucket");
-
-}
-
 
 const generateFileName = (sampleFile, assetId, filesArray, imageDescription) => {
     let imgObject = {};
@@ -82,24 +28,12 @@ const generateFileName = (sampleFile, assetId, filesArray, imageDescription) => 
     imgObject.IMAGEURL = content;
     imgObject.IMAGE_DESCRIPTION = imageDescription;
     filesArray.push(imgObject)
-    imgObject = {}
-
-    try {
-        putFileInBucket(assetId,sampleFile,finalFname,function(err){
-            if (err) {
-                return res.status(500).send(err);
-            }
-        });
-       
-
-    } catch (err) {
-        console.log("Folder creation failed " + err.message);
-    }
-    // sampleFile.mv(uploadPath, function (err) {
-    //     if (err) {
-    //         return res.status(500).send(err);
-    //     }
-    // })
+    imgObject = {};
+    sampleFile.mv(uploadPath, function (err) {
+        if (err) {
+            return res.status(500).send(err);
+        }
+    })
     return filesArray;
 }
 
@@ -815,25 +749,11 @@ module.exports = class Asset {
                 const uploadPath = path.join('/', 'mnt/ahfs/assets', assetId, finalFname);
                 var content = 'assets/' + assetId + '/' + `${finalFname}`
                 //console.log(content)
-                // thumbnail.mv(uploadPath, function (err) {
-                //     if (err) {
-                //         return res.status(500).send(err);
-                //     }
-                // })
-
-                try {
-
-                    putFileInBucket(assetId,thumbnail,finalFname,function(err){
-                        if (err) {
-                            return res.status(500).send(err);
-                        }
-                    });
-                   
-
-                } catch (err) {
-                    console.log("Folder creation failed " + err.message);
-                }
-
+                thumbnail.mv(uploadPath, function (err) {
+                    if (err) {
+                        return res.status(500).send(err);
+                    }
+                })
 
                 connection.update(`UPDATE ASSET_DETAILS set 
             ASSET_THUMBNAIL=:ASSET_THUMBNAIL
@@ -940,11 +860,11 @@ module.exports = class Asset {
             const finalFname = fname + uniqueId.concat('.', ftype);
             const uploadPath = path.join(__dirname, '../../../..', 'mnt/ahfs/', finalFname);
             var content = `${finalFname}`;
-            putFileInBucket(assetId,video,finalFname,function(err){
+            video.mv(uploadPath, function (err) {
                 if (err) {
                     return res.status(500).send(err);
                 }
-            });
+            })
             connection.update(`UPDATE ASSET_DETAILS set 
         ASSET_VIDEO_URL=:ASSET_VIDEO_URL
              WHERE ASSET_ID=:ASSET_ID`, [content, assetId],
@@ -958,71 +878,7 @@ module.exports = class Asset {
         })
     }
 
-    static async uploadDoc(host,data,file){
-        const connection = await getDb();
-        let fname = file.name.split('.')[0];
-        fname = fname.replace(/ /g, '');
-        const ftype = file.name.split('.')[1];
-        const uniqueId = uniqid();
-        const finalFname = fname + uniqueId.concat('.', ftype);
-        const uploadPath = path.join('/', 'mnt/ahfs/assets', data.assetId, finalFname);
-            var content = 'http://' + host + '/' + 'assets/' + data.assetId + "/" + finalFname;
-        try{
-            
-            const namespace = ociConfig.namespace;
-
-            let bucket=data.assetId;
-            try{
-                const getBucketRequest = {
-                    namespaceName: namespace,
-                    bucketName: bucket
-                  };
-                await client.getBucket(getBucketRequest);
-                console.log("Bucket found");
-
-            }catch(e){
-                if(e.serviceCode =='BucketNotFound'){
-                    console.log("Creating a new bucket");
-                    const bucketDetails = {
-                        name: bucket,
-                        compartmentId: ociConfig.compartmentId
-                    };
-                    const createBucketRequest = {
-                        namespaceName: namespace,
-                        createBucketDetails: bucketDetails
-                    };
-                    await client.createBucket(createBucketRequest);
-                }else throw e;
-            }
-            
-            const object = finalFname;
-            const objectData = file.data;
-            const fileSize = file.size;
-            
-            const putObjectRequest = {
-            namespaceName: namespace,
-            bucketName: bucket,
-            putObjectBody: objectData,
-            objectName: object,
-            contentLength: fileSize
-            };
-            const putObjectResponse = await client.putObject(putObjectRequest);
-            console.log("Put Object executed successfully" + putObjectResponse);
-            await connection.update(`INSERT into ASSET_LINKS(LINK_URL_TYPE,LINK_URL,LINK_REPOS_TYPE,LINK_DESCRIPTION,LINK_DESCRIPTION_DATA,DEPLOY_STATUS,LINK_ID,ASSET_ID) values(
-                :LINK_URL_TYPE,:LINK_URL,:LINK_REPOS_TYPE,:LINK_DESCRIPTION,:LINK_DESCRIPTION_DATA,:DEPLOY_STATUS,:LINK_ID,:ASSET_ID)
-              `, [data.LINK_URL_TYPE, content, data.LINK_REPOS_TYPE, data.LINK_DESCRIPTION, data.LINK_DESCRIPTION_DATA, 0, uniqueId, data.assetId],
-                {
-                    outFormat: oracledb.Object,
-                    autoCommit: true
-                });
-            console.log("Document inserted Successfully");
-            return "working";
-
-        }catch(e){
-            console.log("OCI Upload Failed");
-        }
-    }
-    /*static uploadDoc(host, data, file) {
+    static uploadDoc(host, data, file) {
         return new Promise((resolve, reject) => {
             const connection = getDb();
             let fname = file.name.split('.')[0];
@@ -1082,7 +938,7 @@ module.exports = class Asset {
                 })
         })
     }
-*/
+
 
     static createFile(file, path) {
         console.log("Calling file create " + path);
