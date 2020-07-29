@@ -29,11 +29,40 @@ const generateFileName = (sampleFile, assetId, filesArray, imageDescription) => 
     imgObject.IMAGE_DESCRIPTION = imageDescription;
     filesArray.push(imgObject)
     imgObject = {};
-    sampleFile.mv(uploadPath, function (err) {
-        if (err) {
-            return res.status(500).send(err);
-        }
-    })
+    try {
+        console.log("---------  FOLDER CREATION for thumbnail ----------")
+        const baseresoursePath = path.join('/', 'mnt/ahfs/assets', assetId);
+        console.log("projected path " + baseresoursePath);
+
+        fs.open(baseresoursePath, 'r', (err) => {
+            if (err) {
+                if (err.code === 'ENOENT') {
+                    console.log('folder does not exist');
+
+                    if (!fs.existsSync(baseresoursePath)) {
+                        fs.mkdirSync(baseresoursePath);
+                        console.log("Calling file create " + uploadPath);
+                        sampleFile.mv(uploadPath, function (err) {
+                            if (err) {
+                                return res.status(500).send(err);
+                            }
+                        })
+                    }
+
+                }
+            } else {
+                console.log("Calling file create " + uploadPath);
+                sampleFile.mv(uploadPath, function (err) {
+                    if (err) {
+                        return res.status(500).send(err);
+                    }
+                })
+            }
+        });
+
+    } catch (err) {
+        console.log("Folder creation failed " + err.message);
+    }
     return filesArray;
 }
 
@@ -749,11 +778,40 @@ module.exports = class Asset {
                 const uploadPath = path.join('/', 'mnt/ahfs/assets', assetId, finalFname);
                 var content = 'assets/' + assetId + '/' + `${finalFname}`
                 //console.log(content)
-                thumbnail.mv(uploadPath, function (err) {
-                    if (err) {
-                        return res.status(500).send(err);
-                    }
-                })
+                try {
+                    console.log("---------  FOLDER CREATION for thumbnail ----------")
+                    const baseresoursePath = path.join('/', 'mnt/ahfs/assets', assetId);
+                    console.log("projected path " + baseresoursePath);
+
+                    fs.open(baseresoursePath, 'r', (err) => {
+                        if (err) {
+                            if (err.code === 'ENOENT') {
+                                console.log('folder does not exist');
+
+                                if (!fs.existsSync(baseresoursePath)) {
+                                    fs.mkdirSync(baseresoursePath);
+                                    console.log("Calling file create " + uploadPath);
+                                    thumbnail.mv(uploadPath, function (err) {
+                                        if (err) {
+                                            return res.status(500).send(err);
+                                        }
+                                    })
+                                }
+
+                            }
+                        } else {
+                            console.log("Calling file create " + uploadPath);
+                            thumbnail.mv(uploadPath, function (err) {
+                                if (err) {
+                                    return res.status(500).send(err);
+                                }
+                            })
+                        }
+                    });
+
+                } catch (err) {
+                    console.log("Folder creation failed " + err.message);
+                }
 
                 connection.update(`UPDATE ASSET_DETAILS set 
             ASSET_THUMBNAIL=:ASSET_THUMBNAIL
