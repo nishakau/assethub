@@ -2522,6 +2522,10 @@ module.exports = class Asset {
                                                             filteredArr.forEach(f => {
                                                                 var secondaryArray = filters.filter(temp=>temp.FILTER_TYPE === type && temp.FILTER_NAME === f.FILTER_NAME && temp.SEC_FILTER_NAME !=null);
                                                                 f.SECONDARY = secondaryArray;
+                                                                for(let i=0;i<f.SECONDARY.length;i++){
+                                                                    f.SECONDARY[i].ASSET_COUNT = countArr.filter(r => r.FILTER_ID === f.SECONDARY[i].FILTER_ID)[0].CNT;
+                                                                    f.SECONDARY[i].WINSTORY_COUNT = winstorycountArr.filter(r => r.FILTER_ID === f.SECONDARY[i].FILTER_ID)[0].CNT;
+                                                                }
                                                                 typeCountArr = countArr.filter(r => r.FILTER_ID === f.FILTER_ID)
                                                                 winstorytypeCountArr = winstorycountArr.filter(r => r.FILTER_ID === f.FILTER_ID)
                                                                 f.ASSET_COUNT = typeCountArr[0].CNT
