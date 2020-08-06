@@ -1533,7 +1533,7 @@ module.exports = class Asset {
                                                             })
                                                             .then(res => {
                                                                 assetTypesArray = res.rows;
-                                                                connection.execute(`select m.filter_id,f.filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where filter_type='Sales Initiatives'`, {},
+                                                                connection.execute(`select m.filter_id,f.filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where filter_type='Sales Play'`, {},
                                                                     {
                                                                         outFormat: oracledb.OBJECT
                                                                     })
