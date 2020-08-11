@@ -1772,7 +1772,7 @@ module.exports = class Asset {
             if (data.length > 0) {
                 data.forEach(val => {
                     let filterstring = filterTypeMap[val.FILTER_TYPE] != undefined ? filterTypeMap[val.FILTER_TYPE] + " INTERSECT select c.ASSET_ID from ASSET_FILTER_ASSET_MAP c,asset_filter d where " : "select c.ASSET_ID from ASSET_FILTER_ASSET_MAP c,asset_filter d where ";
-                    filterTypeMap[val.FILTER_TYPE] = filterstring + " d.filter_id='" + val.FILTER_ID + "' and c.filter_id=d.filter_id and  d.filter_type!='Asset Type'";
+                    filterTypeMap[val.FILTER_TYPE] = filterstring + " d.filter_id='" + val.FILTER_ID + "' and c.filter_id=d.filter_id";
                 });
 
                 Object.keys(filterTypeMap).forEach(filterType => {
@@ -1783,7 +1783,7 @@ module.exports = class Asset {
                 queryString = "select b.* from  (" + queryString + ") a,asset_details b where a.asset_id=b.asset_id and b.asset_status='Live'";
 
             } else {
-                queryString = "select b.* from  (select distinct ASSET_ID from ASSET_FILTER_ASSET_MAP c,asset_filter d where c.filter_id=d.filter_id and  d.filter_type='Asset Type') a,asset_details b where a.ASSET_ID=b.ASSET_ID and b.asset_status='Live'";
+                queryString = "select b.* from  (select distinct ASSET_ID from ASSET_FILTER_ASSET_MAP c,asset_filter d where c.filter_id=d.filter_id) a,asset_details b where a.ASSET_ID=b.ASSET_ID and b.asset_status='Live'";
 
             }
             console.log("--------- Convert  QUERY  -------");
