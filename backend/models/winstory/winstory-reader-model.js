@@ -1400,10 +1400,10 @@ module.exports = class Asset {
             // CREATE SQL queries   
             if (data.length > 0) {
                 data.forEach(val => {
-                    if (val.FILTER_TYPE != "Asset Type") {
+                    
                         let filterstring = filterTypeMap[val.FILTER_TYPE] != undefined ? filterTypeMap[val.FILTER_TYPE] + " INTERSECT select c.WINSTORY_ID from ASSET_WINSTORY_FILTER_WINSTORY_MAP c,asset_filter d where " : "select c.WINSTORY_ID from ASSET_WINSTORY_FILTER_WINSTORY_MAP c,asset_filter d where ";
                         filterTypeMap[val.FILTER_TYPE] = filterstring + " d.filter_id='" + val.FILTER_ID + "' and c.filter_id=d.filter_id and  d.filter_type!='Asset Type'";
-                    }
+                    
                 });
                 Object.keys(filterTypeMap).forEach(filterType => {
                     queryString = queryString.length > 0 ? queryString + " INTERSECT " + filterTypeMap[filterType] : filterTypeMap[filterType];

@@ -10,60 +10,6 @@ let stringSimilarity = require('string-similarity');
 const fs = require('fs');
 const cluster = require('express-cluster');
 
-//oci related stuff comes here
-const ociConfig = require("../config/oci");
-const client = ociConfig.client;
-
-
-/**
- * Method to put any file to the Object Storage
- * Accepts - three parameters - Bucket Name , File , FileName
- * Returns Promise
- */
-async function putFileInBucket(assetId,file,finalFname){
-        
-        const namespace = ociConfig.namespace;
-        let bucket=assetId;
-        
-        try{
-                const getBucketRequest = {
-                    namespaceName: namespace,
-                    bucketName: bucket
-                  };
-                await client.getBucket(getBucketRequest);
-                console.log("Bucket found");
-
-            }catch(e){
-                if(e.serviceCode =='BucketNotFound'){
-                    console.log("Creating a new bucket");
-                    const bucketDetails = {
-                        name: bucket,
-                        compartmentId: ociConfig.compartmentId
-                    };
-                    const createBucketRequest = {
-                        namespaceName: namespace,
-                        createBucketDetails: bucketDetails
-                    };
-                    await client.createBucket(createBucketRequest);
-                }else throw e;
-            }
-            
-            const object = finalFname;
-            const objectData = file.data;
-            const fileSize = file.size;
-            
-            const putObjectRequest = {
-            namespaceName: namespace,
-            bucketName: bucket,
-            putObjectBody: objectData,
-            objectName: object,
-            contentLength: fileSize
-            };
-           await client.putObject(putObjectRequest);
-           console.log("Inserted into the bucket");
-
-}
-
 
 const generateFileName = (sampleFile, assetId, filesArray, imageDescription) => {
     let imgObject = {};
@@ -82,24 +28,41 @@ const generateFileName = (sampleFile, assetId, filesArray, imageDescription) => 
     imgObject.IMAGEURL = content;
     imgObject.IMAGE_DESCRIPTION = imageDescription;
     filesArray.push(imgObject)
-    imgObject = {}
-
+    imgObject = {};
     try {
-        putFileInBucket(assetId,sampleFile,finalFname,function(err){
+        console.log("---------  FOLDER CREATION for thumbnail ----------")
+        const baseresoursePath = path.join('/', 'mnt/ahfs/assets', assetId);
+        console.log("projected path " + baseresoursePath);
+
+        fs.open(baseresoursePath, 'r', (err) => {
             if (err) {
-                return res.status(500).send(err);
+                if (err.code === 'ENOENT') {
+                    console.log('folder does not exist');
+
+                    if (!fs.existsSync(baseresoursePath)) {
+                        fs.mkdirSync(baseresoursePath);
+                        console.log("Calling file create " + uploadPath);
+                        sampleFile.mv(uploadPath, function (err) {
+                            if (err) {
+                                return res.status(500).send(err);
+                            }
+                        })
+                    }
+
+                }
+            } else {
+                console.log("Calling file create " + uploadPath);
+                sampleFile.mv(uploadPath, function (err) {
+                    if (err) {
+                        return res.status(500).send(err);
+                    }
+                })
             }
         });
-       
 
     } catch (err) {
         console.log("Folder creation failed " + err.message);
     }
-    // sampleFile.mv(uploadPath, function (err) {
-    //     if (err) {
-    //         return res.status(500).send(err);
-    //     }
-    // })
     return filesArray;
 }
 
@@ -815,25 +778,40 @@ module.exports = class Asset {
                 const uploadPath = path.join('/', 'mnt/ahfs/assets', assetId, finalFname);
                 var content = 'assets/' + assetId + '/' + `${finalFname}`
                 //console.log(content)
-                // thumbnail.mv(uploadPath, function (err) {
-                //     if (err) {
-                //         return res.status(500).send(err);
-                //     }
-                // })
-
                 try {
+                    console.log("---------  FOLDER CREATION for thumbnail ----------")
+                    const baseresoursePath = path.join('/', 'mnt/ahfs/assets', assetId);
+                    console.log("projected path " + baseresoursePath);
 
-                    putFileInBucket(assetId,thumbnail,finalFname,function(err){
+                    fs.open(baseresoursePath, 'r', (err) => {
                         if (err) {
-                            return res.status(500).send(err);
+                            if (err.code === 'ENOENT') {
+                                console.log('folder does not exist');
+
+                                if (!fs.existsSync(baseresoursePath)) {
+                                    fs.mkdirSync(baseresoursePath);
+                                    console.log("Calling file create " + uploadPath);
+                                    thumbnail.mv(uploadPath, function (err) {
+                                        if (err) {
+                                            return res.status(500).send(err);
+                                        }
+                                    })
+                                }
+
+                            }
+                        } else {
+                            console.log("Calling file create " + uploadPath);
+                            thumbnail.mv(uploadPath, function (err) {
+                                if (err) {
+                                    return res.status(500).send(err);
+                                }
+                            })
                         }
                     });
-                   
 
                 } catch (err) {
                     console.log("Folder creation failed " + err.message);
                 }
-
 
                 connection.update(`UPDATE ASSET_DETAILS set 
             ASSET_THUMBNAIL=:ASSET_THUMBNAIL
@@ -940,11 +918,11 @@ module.exports = class Asset {
             const finalFname = fname + uniqueId.concat('.', ftype);
             const uploadPath = path.join(__dirname, '../../../..', 'mnt/ahfs/', finalFname);
             var content = `${finalFname}`;
-            putFileInBucket(assetId,video,finalFname,function(err){
+            video.mv(uploadPath, function (err) {
                 if (err) {
                     return res.status(500).send(err);
                 }
-            });
+            })
             connection.update(`UPDATE ASSET_DETAILS set 
         ASSET_VIDEO_URL=:ASSET_VIDEO_URL
              WHERE ASSET_ID=:ASSET_ID`, [content, assetId],
@@ -958,71 +936,7 @@ module.exports = class Asset {
         })
     }
 
-    static async uploadDoc(host,data,file){
-        const connection = await getDb();
-        let fname = file.name.split('.')[0];
-        fname = fname.replace(/ /g, '');
-        const ftype = file.name.split('.')[1];
-        const uniqueId = uniqid();
-        const finalFname = fname + uniqueId.concat('.', ftype);
-        const uploadPath = path.join('/', 'mnt/ahfs/assets', data.assetId, finalFname);
-            var content = 'http://' + host + '/' + 'assets/' + data.assetId + "/" + finalFname;
-        try{
-            
-            const namespace = ociConfig.namespace;
-
-            let bucket=data.assetId;
-            try{
-                const getBucketRequest = {
-                    namespaceName: namespace,
-                    bucketName: bucket
-                  };
-                await client.getBucket(getBucketRequest);
-                console.log("Bucket found");
-
-            }catch(e){
-                if(e.serviceCode =='BucketNotFound'){
-                    console.log("Creating a new bucket");
-                    const bucketDetails = {
-                        name: bucket,
-                        compartmentId: ociConfig.compartmentId
-                    };
-                    const createBucketRequest = {
-                        namespaceName: namespace,
-                        createBucketDetails: bucketDetails
-                    };
-                    await client.createBucket(createBucketRequest);
-                }else throw e;
-            }
-            
-            const object = finalFname;
-            const objectData = file.data;
-            const fileSize = file.size;
-            
-            const putObjectRequest = {
-            namespaceName: namespace,
-            bucketName: bucket,
-            putObjectBody: objectData,
-            objectName: object,
-            contentLength: fileSize
-            };
-            const putObjectResponse = await client.putObject(putObjectRequest);
-            console.log("Put Object executed successfully" + putObjectResponse);
-            await connection.update(`INSERT into ASSET_LINKS(LINK_URL_TYPE,LINK_URL,LINK_REPOS_TYPE,LINK_DESCRIPTION,LINK_DESCRIPTION_DATA,DEPLOY_STATUS,LINK_ID,ASSET_ID) values(
-                :LINK_URL_TYPE,:LINK_URL,:LINK_REPOS_TYPE,:LINK_DESCRIPTION,:LINK_DESCRIPTION_DATA,:DEPLOY_STATUS,:LINK_ID,:ASSET_ID)
-              `, [data.LINK_URL_TYPE, content, data.LINK_REPOS_TYPE, data.LINK_DESCRIPTION, data.LINK_DESCRIPTION_DATA, 0, uniqueId, data.assetId],
-                {
-                    outFormat: oracledb.Object,
-                    autoCommit: true
-                });
-            console.log("Document inserted Successfully");
-            return "working";
-
-        }catch(e){
-            console.log("OCI Upload Failed");
-        }
-    }
-    /*static uploadDoc(host, data, file) {
+    static uploadDoc(host, data, file) {
         return new Promise((resolve, reject) => {
             const connection = getDb();
             let fname = file.name.split('.')[0];
@@ -1082,7 +996,7 @@ module.exports = class Asset {
                 })
         })
     }
-*/
+
 
     static createFile(file, path) {
         console.log("Calling file create " + path);
@@ -1619,7 +1533,7 @@ module.exports = class Asset {
                                                             })
                                                             .then(res => {
                                                                 assetTypesArray = res.rows;
-                                                                connection.execute(`select m.filter_id,f.filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where filter_type='Sales Initiatives'`, {},
+                                                                connection.execute(`select m.filter_id,f.filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where filter_type='Sales Play'`, {},
                                                                     {
                                                                         outFormat: oracledb.OBJECT
                                                                     })
@@ -1858,7 +1772,7 @@ module.exports = class Asset {
             if (data.length > 0) {
                 data.forEach(val => {
                     let filterstring = filterTypeMap[val.FILTER_TYPE] != undefined ? filterTypeMap[val.FILTER_TYPE] + " INTERSECT select c.ASSET_ID from ASSET_FILTER_ASSET_MAP c,asset_filter d where " : "select c.ASSET_ID from ASSET_FILTER_ASSET_MAP c,asset_filter d where ";
-                    filterTypeMap[val.FILTER_TYPE] = filterstring + " d.filter_id='" + val.FILTER_ID + "' and c.filter_id=d.filter_id and  d.filter_type!='Asset Type'";
+                    filterTypeMap[val.FILTER_TYPE] = filterstring + " d.filter_id='" + val.FILTER_ID + "' and c.filter_id=d.filter_id";
                 });
 
                 Object.keys(filterTypeMap).forEach(filterType => {
@@ -1869,7 +1783,7 @@ module.exports = class Asset {
                 queryString = "select b.* from  (" + queryString + ") a,asset_details b where a.asset_id=b.asset_id and b.asset_status='Live'";
 
             } else {
-                queryString = "select b.* from  (select distinct ASSET_ID from ASSET_FILTER_ASSET_MAP c,asset_filter d where c.filter_id=d.filter_id and  d.filter_type='Asset Type') a,asset_details b where a.ASSET_ID=b.ASSET_ID and b.asset_status='Live'";
+                queryString = "select b.* from  (select distinct ASSET_ID from ASSET_FILTER_ASSET_MAP c,asset_filter d where c.filter_id=d.filter_id) a,asset_details b where a.ASSET_ID=b.ASSET_ID and b.asset_status='Live'";
 
             }
             console.log("--------- Convert  QUERY  -------");
@@ -2591,12 +2505,12 @@ module.exports = class Asset {
                                                         console.log(JSON.stringify(type));
                                                         // console.log(JSON.stringify(filteredArr));
                                                         if (filterObj != undefined) {
-                                                            filteredArr = filters.filter(f => f.FILTER_TYPE != null && f.FILTER_TYPE === type && f.FILTER_NAME != null && !f.FILTER_NAME.toLowerCase().includes('other'));
+                                                            filteredArr = filters.filter(f => f.FILTER_TYPE != null && f.FILTER_TYPE === type && f.FILTER_NAME != null && !f.FILTER_NAME.toLowerCase().includes('other') && f.SEC_FILTER_NAME==null);
                                                             if(filteredArr.length<1) return;
                                                             filterObj.Type = type;
                                                             filterObj.FILTER_TYPE_IMAGE = 'http://' + host + '/' + filteredArr[0].FILTER_TYPE_IMAGE;
                                                             filteredArr.sort((a, b) => (a.FILTER_NAME > b.FILTER_NAME) ? 1 : -1)
-                                                            const otherArr = filters.filter(f => f.FILTER_TYPE != null && f.FILTER_TYPE === type && f.FILTER_NAME != null && f.FILTER_NAME.toLowerCase().includes('other'))
+                                                            const otherArr = filters.filter(f => f.FILTER_TYPE != null && f.FILTER_TYPE === type && f.FILTER_NAME != null && f.FILTER_NAME.toLowerCase().includes('other') && f.SEC_FILTER_NAME==null)
                                                             if (otherArr.length === 1) {
                                                                 filteredArr.push(otherArr[0]);
                                                             }
@@ -2606,6 +2520,12 @@ module.exports = class Asset {
                                                                 })
                                                             }
                                                             filteredArr.forEach(f => {
+                                                                var secondaryArray = filters.filter(temp=>temp.FILTER_TYPE === type && temp.FILTER_NAME === f.FILTER_NAME && temp.SEC_FILTER_NAME !=null);
+                                                                f.SECONDARY = secondaryArray;
+                                                                for(let i=0;i<f.SECONDARY.length;i++){
+                                                                    f.SECONDARY[i].ASSET_COUNT = countArr.filter(r => r.FILTER_ID === f.SECONDARY[i].FILTER_ID)[0].CNT;
+                                                                    f.SECONDARY[i].WINSTORY_COUNT = winstorycountArr.filter(r => r.FILTER_ID === f.SECONDARY[i].FILTER_ID)[0].CNT;
+                                                                }
                                                                 typeCountArr = countArr.filter(r => r.FILTER_ID === f.FILTER_ID)
                                                                 winstorytypeCountArr = winstorycountArr.filter(r => r.FILTER_ID === f.FILTER_ID)
                                                                 f.ASSET_COUNT = typeCountArr[0].CNT
@@ -2615,10 +2535,10 @@ module.exports = class Asset {
                                                                 f.FILTER_IMAGE = 'http://' + host + '/' + f.FILTER_IMAGE;
                                                             })
                                                             filterObj.filters = filteredArr;
-
-                                                            if (filterObj.Type != "Asset Type") {
+                                                            //Commented below condition as part of sprint-1 to get the filters related to Asset type as well
+                                                            //if (filterObj.Type != "Asset Type") {
                                                                 allFilters.push(filterObj);
-                                                            }
+                                                            //}
 
                                                             filterObj = {};
                                                         }
@@ -2632,6 +2552,7 @@ module.exports = class Asset {
                                                     reject(err)
 
                                                 })
+                                            
                                         })
                                 })
                         })
