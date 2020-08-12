@@ -466,7 +466,151 @@ updateFilterStatus = (data) => {
 
     });
 }
-exports.mapFilters = (filter) => {
+
+//Newly modified map function by Nishant.k.kaushik
+function mapWinFilters(res,mapCount){
+    return new Promise((resolve,reject)=>{
+            const connection = getDb();
+            console.log('calling checkMapping: wins');
+            
+            
+                if (res.length > 0) {
+                    let createLinksSql = `INSERT into ASSET_WINSTORY_FILTER_WINSTORY_MAP(FILTER_ASSET_MAP_ID,FILTER_ID,WINSTORY_ID)  values(:0,:1,:2)`;
+                    let options = {
+                        autoCommit: true,   // autocommit if there are no batch errors
+                        batchErrors: true,  // identify invalid records; start a transaction for valid ones
+                        bindDefs: [         // describes the data in 'binds'
+                            { type: oracledb.STRING, maxSize: 20 },
+                            { type: oracledb.STRING, maxSize: 20 },
+                            { type: oracledb.STRING, maxSize: 20 }
+                        ]
+                    };
+                    console.log("Executing. . .wins");
+                    console.log('bindWins.length:- ' + res.length);
+                    connection.executeMany(createLinksSql, res, options, (err, result) => {
+                        console.log("Executed wins map");
+                        if (err || result.rowsAffected == 0) {
+                            mapCount.mappedWins = mapCount.mappedWins + 1;
+                            console.log("Error while saving wins filters :" + err);
+                            resolve(mapCount);
+                        }
+                        else {
+                            updateFilterStatus(filterStatus);
+                            console.log("wins Result is:", JSON.stringify(result));
+                            mapCount.newMappedWins = mapCount.newMappedWins + 1;
+                            console.log('wins Map Count' + JSON.stringify(mapCount));
+                            resolve(mapCount);
+                        }
+
+                    });
+                } else {
+                    mapCount.mappedWins = mapCount.mappedWins + 1;
+                    console.log('wins Map Count' + JSON.stringify(mapCount));
+                    resolve(mapCount);
+                }
+    })
+}
+
+
+function mapAssetFilters(res,mapCount){
+    return new Promise((resolve,reject)=>{
+        const connection = getDb();
+        if (res.length > 0) {
+            let createLinksSql = `INSERT into ASSET_FILTER_ASSET_MAP(FILTER_ASSET_MAP_ID,FILTER_ID,ASSET_ID)  values(:0,:1,:2)`;
+            let options = {
+                autoCommit: true,   // autocommit if there are no batch errors
+                batchErrors: true,  // identify invalid records; start a transaction for valid ones
+                bindDefs: [         // describes the data in 'binds'
+                    { type: oracledb.STRING, maxSize: 20 },
+                    { type: oracledb.STRING, maxSize: 20 },
+                    { type: oracledb.STRING, maxSize: 20 }
+                ]
+            };
+            console.log("Executing. . .");
+            console.log('bindassets.length:- ' + res.length);
+            connection.executeMany(createLinksSql, res, options, (err, result) => {
+                console.log("Executed asset map");
+                if (err || result.rowsAffected == 0) {
+                    console.log("Error while saving filters :" + err);
+                    mapCount.mappedAsset = mapCount.mappedAsset + 1;
+                    resolve(mapCount);
+                }
+                else {
+                    mapCount.newMappedAsset = mapCount.newMappedAsset + 1;
+                    console.log('Map Count assets' + JSON.stringify(mapCount));
+                    mappedFlag = true;
+                    console.log("assets Result is:", JSON.stringify(result));
+                    //updateFilterStatus(filterStatus);
+                    resolve(mapCount);
+                }
+    
+            });
+        } else {
+            mapCount.mappedAsset = mapCount.mappedAsset + 1;
+            console.log('Map Count assets ' + JSON.stringify(mapCount));
+            resolve(mapCount);
+        }
+
+    });
+    
+
+}
+
+exports.mapFilters = async (filter) => {
+    
+    
+        if (filter.filter.length > 0) {
+            let count = filter.filter.length-1;
+            let mapCount = {
+                mappedAsset: 0,
+                newMappedAsset: 0,
+                mappedWins: 0,
+                newMappedWins: 0
+            };
+            let sqlAsset = `Select * from ASSET_FILTER_ASSET_MAP where FILTER_ID=:FILTER_ID AND ASSET_ID=:assetid`;
+            let sqlWins = `Select * from ASSET_WINSTORY_FILTER_WINSTORY_MAP where FILTER_ID=:FILTER_ID AND WINSTORY_ID=:WINSTORY_ID`;
+
+                for(let i=0;i<filter.filter.length;i++){
+                    console.log('calling checkMapping: assets');
+                    
+                    try{
+                        if (filter.assets.length > 0) {
+                            let res = await checkMapping(filter.assets,sqlAsset,filter.filter[i]);
+                            mapCount = await mapAssetFilters(res,mapCount);
+                        }
+                        if (filter.wins.length > 0) {
+                            let res = await checkMapping(filter.wins, sqlWins, filter.filter[i]);
+                            mapCount = await mapWinFilters(res,mapCount);
+                        }
+                        if(count == i){
+                            let msg = await generateMsg(mapCount);
+                            return({ "status": 'Success', "message": msg })
+                            
+                        }
+
+                    }catch(e){
+                        console.log(e);
+                        return({ "status": 'Error', "message": "Error while mapping" });
+                    }
+                    
+                }
+        }
+        else {
+            return({ "status": 'Error', "message": "Incorrect Payload" });
+        }
+    
+}
+
+
+
+
+
+//Ends here
+
+
+
+
+exports.mapFiltersOld = (filter) => {
     const connection = getDb();
     return new Promise((resolve, reject) => {
         if (filter.filter.length > 0) {
