@@ -1395,7 +1395,7 @@ module.exports = class Asset {
                                     outFormat: oracledb.OBJECT
                                 }).then(data => {
                                     // WE ARE THE GETTING THE FILTERED ASSETS BASED ON SELECTION
-                                    let fetchAllFilterSQL = `select a.filter_id,a.filter_name,a.filter_type,b.asset_id from asset_filter a, asset_filter_asset_map b where a.filter_id=b.filter_id and a.filter_status=1`;
+                                    let fetchAllFilterSQL = `select a.filter_id,a.filter_name,a.sec_filter_name,a.filter_type,b.asset_id from asset_filter a, asset_filter_asset_map b where a.filter_id=b.filter_id and a.filter_status=1`;
 
                                     connection.query(fetchAllFilterSQL, {},
                                         {
@@ -1422,7 +1422,7 @@ module.exports = class Asset {
                         outFormat: oracledb.OBJECT
                     }).then(data => {
                         // WE ARE THE GETTING THE FILTERED ASSETS BASED ON SELECTION
-                        let fetchAllFilterSQL = `select a.filter_id,a.filter_name,a.filter_type,b.asset_id from asset_filter a, asset_filter_asset_map b where a.filter_id=b.filter_id and a.filter_status=1`;
+                        let fetchAllFilterSQL = `select a.filter_id,a.filter_name,a.sec_filter_name,a.filter_type,b.asset_id from asset_filter a, asset_filter_asset_map b where a.filter_id=b.filter_id and a.filter_status=1`;
                         console.log("asset  count ***** : " + data.length);
                         connection.query(fetchAllFilterSQL, {},
                             {
@@ -1516,30 +1516,30 @@ module.exports = class Asset {
                                     })
                                     .then(res => {
                                         imagesArray = res.rows;
-                                        connection.execute(`select m.filter_id,f.filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where filter_type='Solution Area'`, {},
+                                        connection.execute(`select m.filter_id,f.filter_name,f.sec_filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where filter_type='Solution Area'`, {},
                                             {
                                                 outFormat: oracledb.OBJECT
                                             })
                                             .then(res => {
                                                 solutionAreasArray = res.rows;
-                                                connection.execute(`select m.filter_id,f.filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where filter_group like 'type_%'`, {},
+                                                connection.execute(`select m.filter_id,f.sec_filter_name,f.filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where filter_group like 'type_%'`, {},
                                                     {
                                                         outFormat: oracledb.OBJECT
                                                     }).then(res => {
                                                         groupTypeArray = res.rows;
-                                                        connection.execute(`select m.filter_id,f.filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where filter_type='Asset Type'`, {},
+                                                        connection.execute(`select m.filter_id,f.sec_filter_name,f.filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where filter_type='Asset Type'`, {},
                                                             {
                                                                 outFormat: oracledb.OBJECT
                                                             })
                                                             .then(res => {
                                                                 assetTypesArray = res.rows;
-                                                                connection.execute(`select m.filter_id,f.filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where filter_type='Sales Play'`, {},
+                                                                connection.execute(`select m.filter_id,f.sec_filter_name,f.filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where filter_type='Sales Play'`, {},
                                                                     {
                                                                         outFormat: oracledb.OBJECT
                                                                     })
                                                                     .then(res => {
                                                                         salesPlaysArray = res.rows;
-                                                                        connection.execute(`select m.filter_id,f.filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where filter_type='Industry'`, {},
+                                                                        connection.execute(`select m.filter_id,f.sec_filter_name,f.filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where filter_type='Industry'`, {},
                                                                             {
                                                                                 outFormat: oracledb.OBJECT
                                                                             })
@@ -2526,6 +2526,7 @@ module.exports = class Asset {
                                                                     f.SECONDARY[i].ASSET_COUNT = countArr.filter(r => r.FILTER_ID === f.SECONDARY[i].FILTER_ID)[0].CNT;
                                                                     f.SECONDARY[i].WINSTORY_COUNT = winstorycountArr.filter(r => r.FILTER_ID === f.SECONDARY[i].FILTER_ID)[0].CNT;
                                                                     f.SECONDARY[i].SEC_FILTER_IMAGE = 'http://' + host + '/' + f.SECONDARY[i].SEC_FILTER_IMAGE;
+                                                                    f.SECONDARY[i].FILTER_IMAGE = 'http://' + host + '/' + f.SECONDARY[i].FILTER_IMAGE;
                                                                 }
                                                                 typeCountArr = countArr.filter(r => r.FILTER_ID === f.FILTER_ID)
                                                                 winstorytypeCountArr = winstorycountArr.filter(r => r.FILTER_ID === f.FILTER_ID)
