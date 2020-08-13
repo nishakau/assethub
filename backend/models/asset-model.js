@@ -2525,6 +2525,7 @@ module.exports = class Asset {
                                                                 for(let i=0;i<f.SECONDARY.length;i++){
                                                                     f.SECONDARY[i].ASSET_COUNT = countArr.filter(r => r.FILTER_ID === f.SECONDARY[i].FILTER_ID)[0].CNT;
                                                                     f.SECONDARY[i].WINSTORY_COUNT = winstorycountArr.filter(r => r.FILTER_ID === f.SECONDARY[i].FILTER_ID)[0].CNT;
+                                                                    f.SECONDARY[i].SEC_FILTER_IMAGE = 'http://' + host + '/' + f.SECONDARY[i].SEC_FILTER_IMAGE;
                                                                 }
                                                                 typeCountArr = countArr.filter(r => r.FILTER_ID === f.FILTER_ID)
                                                                 winstorytypeCountArr = winstorycountArr.filter(r => r.FILTER_ID === f.FILTER_ID)
