@@ -232,7 +232,7 @@ exports.postEditAsset = (req, res) => {
    
     if(type==undefined||type==null||type.trim().length==0||type.trim()=='save'){
         type='Saved';
-    }else if(type.trim()=='submit'){
+    }else if(type.trim()=='submit' || type.trim()=='edit'){
         type='Pending Review';
     }else{
         type='Saved';
