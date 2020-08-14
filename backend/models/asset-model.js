@@ -169,7 +169,7 @@ const getCommentsById = (assetId, host) => {
 
 const getAssetFilterMapByIdandType = (assetId) => {
     const connection = getDb();
-    return connection.query(`select m.filter_id,filter_type,f.filter_name from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where  ASSET_ID=:ASSET_ID`, [assetId],
+    return connection.query(`select m.filter_id,filter_type,f.filter_name,f.sec_filter_name from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where  ASSET_ID=:ASSET_ID`, [assetId],
         {
             outFormat: oracledb.OBJECT
         })
@@ -177,7 +177,7 @@ const getAssetFilterMapByIdandType = (assetId) => {
 
 const getSolutionAreasByAssetId = (assetId) => {
     const connection = getDb();
-    return connection.query(`select m.filter_id,filter_type,f.filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where  ASSET_ID=:ASSET_ID and filter_type='Solution Area'`, [assetId],
+    return connection.query(`select m.filter_id,filter_type,f.filter_name,f.sec_filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where  ASSET_ID=:ASSET_ID and filter_type='Solution Area'`, [assetId],
         {
             outFormat: oracledb.OBJECT
         })
@@ -185,7 +185,7 @@ const getSolutionAreasByAssetId = (assetId) => {
 
 const getAssetTypesByAssetId = (assetId) => {
     const connection = getDb();
-    return connection.query(`select m.filter_id,filter_type,f.filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where  ASSET_ID=:ASSET_ID and filter_type='Asset Type'`, [assetId],
+    return connection.query(`select m.filter_id,filter_type,f.filter_name,f.sec_filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where  ASSET_ID=:ASSET_ID and filter_type='Asset Type'`, [assetId],
         {
             outFormat: oracledb.OBJECT
         })
@@ -207,7 +207,7 @@ const getGroupTypeByAssetId = (assetId) => {
 
 const getIndustryByAssetId = (assetId) => {
     const connection = getDb();
-    return connection.query(`select m.filter_id,f.filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where ASSET_ID=:ASSET_ID and filter_type='Industry'`, [assetId],
+    return connection.query(`select m.filter_id,f.filter_name,f.sec_filter_name,m.asset_id from asset_filter_asset_map m join asset_filter f on (m.filter_id=f.filter_id) where ASSET_ID=:ASSET_ID and filter_type='Industry'`, [assetId],
         {
             outFormat: oracledb.OBJECT
         })
