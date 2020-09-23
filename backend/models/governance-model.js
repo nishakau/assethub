@@ -51,7 +51,7 @@ exports.fetchAssets = (user_email, host) => {
                      
                 }
                 else if(role=='vp'){
-                    fetchPendingReviewAssetsSql+= ` user_reporting_lob_leader=:USER_EMAIL and d.asset_status in ('manager_approved','Live','Reject','Pending Retification')`
+                    fetchPendingReviewAssetsSql+= ` and user_reporting_lob_leader=:USER_EMAIL`
                 }
                 fetchPendingReviewAssetsSql +=` order by d.asset_modified_date desc`;
                 //let fetchPendingReviewAssetsOptions = [user_email,user_email];
