@@ -41,12 +41,20 @@ exports.fetchAssets = (user_email, host) => {
                     ASSET_OWNER,
                     ASSET_STATUS,
                     ASSET_REVIEW_NOTE
-                    from asset_details d,asset_user u where d.asset_status in ('Live','Pending Review','Reject','Pending Rectification')
-                    and u.USER_EMAIL=:USER_EMAIL order by d.asset_modified_date desc`;
+                    from asset_details d,asset_user u where d.asset_owner = u.user_email and d.asset_status in ('Live','Pending Review','Reject','Pending Rectification','manager_approved')`;
+                    //and u.USER_EMAIL=:USER_EMAIL`;
                 if (role == 'reviewer') {
                     fetchPendingReviewAssetsSql += ` and d.asset_location = u.user_location`;
                 }
-
+                else if(role=='manager'){
+                    fetchPendingReviewAssetsSql += ` and u.user_manager_email=:USER_EMAIL`;
+                     
+                }
+                else if(role=='vp'){
+                    fetchPendingReviewAssetsSql+= ` and user_reporting_lob_leader=:USER_EMAIL`
+                }
+                fetchPendingReviewAssetsSql +=` order by d.asset_modified_date desc`;
+                //let fetchPendingReviewAssetsOptions = [user_email,user_email];
                 let fetchPendingReviewAssetsOptions = [user_email];
                 connection.query(fetchPendingReviewAssetsSql, fetchPendingReviewAssetsOptions,
                     {
@@ -75,6 +83,8 @@ formatAssetByStatus = (result, host) => {
 
     let liveList = [];
 
+    let manager_approved = [];
+
 
     let assetlist = [{
         status: "Pending Review",
@@ -88,6 +98,9 @@ formatAssetByStatus = (result, host) => {
     }, {
         status: "Live",
         list: liveList
+    },{
+        status: "manager_approved",
+        list: manager_approved
     }];
 
     result.map(asset => {
@@ -100,6 +113,8 @@ formatAssetByStatus = (result, host) => {
             rejectList.push(asset);
         } else if (asset.ASSET_STATUS == 'Live') {
             liveList.push(asset);
+        } else if (asset.ASSET_STATUS == 'manager_approved') {
+            manager_approved.push(asset);
         }
     })
 

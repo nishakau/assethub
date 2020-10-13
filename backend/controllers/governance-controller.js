@@ -46,6 +46,11 @@ exports.addAssetReviewNote = (req, res) => {
                     sendEmailForAssetStatusChange(assetId, 'rejected');
 
                 }
+                else if (asset_status === 'manager_approved') {
+                    res.json({ "status": "Asset has been sent for 2nd level approval." })
+                    sendEmailForAssetStatusChange(assetId, '2nd level approval');
+
+                }
             })
             .catch(err => {
                 console.log("postAssetReviewNote . . . error");
