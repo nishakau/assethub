@@ -42,22 +42,23 @@ const sendEmailOnAssetCreation = (assetId, asset_owner, assetCreatedEmailSql, as
             .then(result => {
                 asset_details = result;
                 console.log('Result:' + result)
-                if (result.length > 0) {
-                    console.log("multiple reviewers")
-                    console.log(JSON.stringify(result));
-                    asset_reviewer_name = result.map(o => o.USER_NAME)
-                    asset_reviewer_name = asset_reviewer_name.join(';')
-                    asset_reviewer_email = result.map(o => o.USER_EMAIL)
-                    asset_reviewer_email = asset_reviewer_email.join(';')
-                }
-                else if (result[0] != undefined) {
-                    console.log("single reviewer")
-                    console.log(JSON.stringify(result[0]));
-                    asset_reviewer_name = result[0].USER_NAME;
-                    asset_reviewer_email = result[0].USER_EMAIL;
-                } else {
-                    reject("No reviewer for the location");
-                }
+                // if (result.length > 0) {
+                //     console.log("multiple reviewers")
+                //     console.log(JSON.stringify(result));
+                //     asset_reviewer_name = result.map(o => o.USER_NAME)
+                //     asset_reviewer_name = asset_reviewer_name.join(';')
+                //     asset_reviewer_email = result.map(o => o.USER_EMAIL)
+                //     asset_reviewer_email = asset_reviewer_email.join(';')
+                // }
+                // else if (result[0] != undefined) {
+                //     console.log("single reviewer")
+                //     console.log(JSON.stringify(result[0]));
+                //     asset_reviewer_name = result[0].USER_NAME;
+                //     asset_reviewer_email = result[0].USER_EMAIL;
+                // } else {
+                //     reject("No reviewer for the location");
+                // }
+                asset_reviewer_email=result[0].USER_MANAGER_EMAIL;
                 return asset_reviewer_email;
             })
             .then(result => {
@@ -70,14 +71,17 @@ const sendEmailOnAssetCreation = (assetId, asset_owner, assetCreatedEmailSql, as
                         else {
                             asset_owners_name = result.rows[0].USER_NAME
                         }
-                        console.log(asset_reviewer_name, status)
-                        axios.post('https://apex.oracle.com/pls/apex/ldap_info/asset/sendemailonassetcreation/sendemail', {
-                            asset_reviewer_name: asset_reviewer_name,
-                            asset_reviewer_email: asset_reviewer_email,
-                            asset_name: asset_details[0].ASSET_TITLE,
-                            asset_description: asset_details[0].ASSET_DESCRIPTION,
-                            asset_owner: asset_owners_name,
-                            status: status
+                        console.log("XXXXXXXXXXXX----Reached to send email -----XXXXXXXXXXXXXX");
+                        console.log(status);
+                        console.log(asset_owners_name)
+                        console.log(asset_reviewer_name, status);
+                        let body =`Asset creation/updation details :<br/><br/>Asset Name : ${ asset_details[0].ASSET_TITLE}<br/>Asset Description : ${asset_details[0].ASSET_DESCRIPTION}<br/>Asset Owner : ${asset_owners_name}<br/>Status : ${status}`
+                        axios.get('https://apex.oracle.com/pls/apex/agsspace/despatchemail/send', {
+                           headers:{
+                            mail_subj:`Asset ${assetId} - ${status}`,
+                            mail_to:`${asset_reviewer_email}`,
+                            mail_body:body
+                           }
                         })
                             .then(response => {
                                 resolve(response)
@@ -127,10 +131,14 @@ exports.postAsset = (req, res) => {
     let filters = req.body.filters;
     const expiryDate = req.body.expiryDate;
     const asset_architecture_description = req.body.asset_architecture_description
-    let assetCreatedEmailSql = `select  user_email,user_name,asset_title,ASSET_DESCRIPTION from asset_user ,asset_details where user_role='reviewer' and asset_id=:0  and user_location in(
-        select user_location from asset_user where user_email in 
-        (  select regexp_substr(asset_owner,'[^,]+', 1, level) from (select asset_owner from asset_details where asset_id=:0)
-        connect by regexp_substr(asset_owner, '[^,]+', 1, level) is not null) and user_location is not null) `;
+    // let assetCreatedEmailSql = `select  user_email,user_name,asset_title,ASSET_DESCRIPTION from asset_user ,asset_details where user_role='reviewer' and asset_id=:0  and user_location in(
+    //     select user_location from asset_user where user_email in 
+    //     (  select regexp_substr(asset_owner,'[^,]+', 1, level) from (select asset_owner from asset_details where asset_id=:0)
+    //     connect by regexp_substr(asset_owner, '[^,]+', 1, level) is not null) and user_location is not null) `;
+
+    let assetCreatedEmailSql = `select u.user_email, u.user_name, u.user_manager_email, a.asset_title, a.ASSET_DESCRIPTION from asset_user u, asset_details a where u.user_email = a.asset_owner and asset_id=:0`
+
+    
     let assetCreatedEmailOptions = [];
 
     // console.log(filters)

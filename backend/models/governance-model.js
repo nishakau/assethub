@@ -41,7 +41,7 @@ exports.fetchAssets = (user_email, host) => {
                     ASSET_OWNER,
                     ASSET_STATUS,
                     ASSET_REVIEW_NOTE
-                    from asset_details d,asset_user u where d.asset_owner = u.user_email and d.asset_status in ('Live','Pending Review','Reject','Pending Rectification','manager_approved')`;
+                    from asset_details d,asset_user u where d.asset_owner = u.user_email and d.asset_status in ('Live','Pending Review','Reject','Pending Rectification','manager_approved','Manager Rectification')`;
                     //and u.USER_EMAIL=:USER_EMAIL`;
                 if (role == 'reviewer') {
                     fetchPendingReviewAssetsSql += ` and d.asset_location = u.user_location`;
@@ -85,6 +85,7 @@ formatAssetByStatus = (result, host) => {
 
     let manager_approved = [];
 
+    let managerRectification =[];
 
     let assetlist = [{
         status: "Pending Review",
@@ -101,6 +102,10 @@ formatAssetByStatus = (result, host) => {
     },{
         status: "manager_approved",
         list: manager_approved
+    },
+    {
+        status: "Manager Rectification",
+        list: managerRectification
     }];
 
     result.map(asset => {
@@ -115,6 +120,8 @@ formatAssetByStatus = (result, host) => {
             liveList.push(asset);
         } else if (asset.ASSET_STATUS == 'manager_approved') {
             manager_approved.push(asset);
+        }else if (asset.ASSET_STATUS == 'Manager Rectification') {
+            managerRectification.push(asset);
         }
     })
 

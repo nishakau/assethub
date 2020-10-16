@@ -36,7 +36,7 @@ exports.addAssetReviewNote = (req, res) => {
                     // generateNotification(assetId);
                     res.json({ "status": "The asset has been approved successfully." });
                 }
-                else if (asset_status === 'Pending Rectification') {
+                else if (asset_status === 'Pending Rectification' || asset_status === 'Manager Rectification') {
                     // sendEmailForRectification(assetId);
                     res.json({ "status": "The asset has been sent for rectification with your valuable inputs." })
                     sendEmailForAssetStatusChange(assetId, 'rectification');
