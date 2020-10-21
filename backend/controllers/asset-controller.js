@@ -3,6 +3,7 @@ const getDb = require('../database/db').getDb;
 const oracledb = require('oracledb');
 const axios = require('axios');
 const worker = require('../utility/worker');
+const emailController = require('../models/email-notification');
 
 const getOwnerManagerEmail = (assetId) => {
     const connection = getDb();
@@ -18,7 +19,7 @@ const getOwnerManagerEmail = (assetId) => {
 
 const getOwnerEmails = (assetId) => {
     const connection = getDb();
-    let rectificationAssetOwnerSql = `select user_name,user_email from asset_user where user_email in(
+    let rectificationAssetOwnerSql = `select user_name,user_email,user_manager_email from asset_user where user_email in(
     select regexp_substr(asset_owner,'[^,]+', 1, level) from (select asset_owner from asset_details where asset_id=:0)
     connect by regexp_substr(asset_owner, '[^,]+', 1, level) is not null)`;
     let rectificationAssetOwnerOptions = [];
@@ -30,6 +31,10 @@ const getOwnerEmails = (assetId) => {
 
 const sendEmailOnAssetCreation = (assetId, asset_owner, assetCreatedEmailSql, assetCreatedEmailOptions, status) => {
     let asset_reviewer_name, asset_name, asset_description, asset_details
+    let user_detail;
+
+    // let assetCreatedEmailSql = `select u.user_email,a.asset_owner, u.user_name, u.user_manager_email, a.asset_title, a.ASSET_DESCRIPTION from asset_user u, asset_details a where u.user_email = a.asset_createdby and asset_id=:0`
+
     return new Promise((resolve, reject) => {
         const connection = getDb();
         assetCreatedEmailOptions.push(assetId)
@@ -41,47 +46,43 @@ const sendEmailOnAssetCreation = (assetId, asset_owner, assetCreatedEmailSql, as
             })
             .then(result => {
                 asset_details = result;
+            
                 console.log('Result:' + result)
-                if (result.length > 0) {
-                    console.log("multiple reviewers")
-                    console.log(JSON.stringify(result));
-                    asset_reviewer_name = result.map(o => o.USER_NAME)
-                    asset_reviewer_name = asset_reviewer_name.join(';')
-                    asset_reviewer_email = result.map(o => o.USER_EMAIL)
-                    asset_reviewer_email = asset_reviewer_email.join(';')
-                }
-                else if (result[0] != undefined) {
-                    console.log("single reviewer")
-                    console.log(JSON.stringify(result[0]));
-                    asset_reviewer_name = result[0].USER_NAME;
-                    asset_reviewer_email = result[0].USER_EMAIL;
-                } else {
-                    reject("No reviewer for the location");
-                }
+                asset_reviewer_email=result[0].USER_MANAGER_EMAIL;
                 return asset_reviewer_email;
             })
             .then(result => {
+                let owners_name='';
+                let owners_email='';
+                let emailFormatted ='';
                 getOwnerEmails(assetId)
                     .then(result => {
                         if (result.rows.length > 0) {
-                            asset_owners_name = result.rows.map(o => o.USER_NAME)
-                            asset_owners_name = asset_owners_name.join(',')
+                            asset_owners_name = result.rows.map(o => o.USER_NAME);
+                            asset_owners_name = asset_owners_name.join(";");
+                            asset_owners_email = result.rows.map(o=>o.USER_EMAIL);
+                            asset_owners_email =asset_owners_email.join(";");
+                            user_manager_email = result.rows.map(o=>o.USER_MANAGER_EMAIL);
+                         
                         }
                         else {
-                            asset_owners_name = result.rows[0].USER_NAME
+                            asset_owners_name = result.rows[0].USER_NAME;
+                            asset_owners_email = result.rows[0].USER_EMAIL;
+                            user_manager_email = result.rows[0].USER_MANAGER_EMAIL;
+                        
                         }
-                        console.log(asset_reviewer_name, status)
-                        axios.post('https://apex.oracle.com/pls/apex/ldap_info/asset/sendemailonassetcreation/sendemail', {
-                            asset_reviewer_name: asset_reviewer_name,
-                            asset_reviewer_email: asset_reviewer_email,
-                            asset_name: asset_details[0].ASSET_TITLE,
-                            asset_description: asset_details[0].ASSET_DESCRIPTION,
-                            asset_owner: asset_owners_name,
-                            status: status
-                        })
-                            .then(response => {
-                                resolve(response)
-                            })
+                        let info ={};
+                        info.asset_title= asset_details[0].ASSET_TITLE;
+                        info.asset_created_by_name = asset_details[0].USER_NAME;
+                        info.asset_created_by_email =  asset_details[0].USER_EMAIL;
+                        info.asset_description=asset_details[0].ASSET_DESCRIPTION;
+                        info.asset_owners_name = asset_owners_name;
+                        info.asset_owners_email= asset_owners_email;
+                        info.manager = asset_reviewer_email;
+                        console.log("EMAIL HEADER ");
+                        console.log(JSON.stringify(info));
+                        emailController.notificationToManagerForApproval(info);
+                       
                     })
                     .catch(err => {
                         console.log(err)
@@ -127,10 +128,14 @@ exports.postAsset = (req, res) => {
     let filters = req.body.filters;
     const expiryDate = req.body.expiryDate;
     const asset_architecture_description = req.body.asset_architecture_description
-    let assetCreatedEmailSql = `select  user_email,user_name,asset_title,ASSET_DESCRIPTION from asset_user ,asset_details where user_role='reviewer' and asset_id=:0  and user_location in(
-        select user_location from asset_user where user_email in 
-        (  select regexp_substr(asset_owner,'[^,]+', 1, level) from (select asset_owner from asset_details where asset_id=:0)
-        connect by regexp_substr(asset_owner, '[^,]+', 1, level) is not null) and user_location is not null) `;
+    // let assetCreatedEmailSql = `select  user_email,user_name,asset_title,ASSET_DESCRIPTION from asset_user ,asset_details where user_role='reviewer' and asset_id=:0  and user_location in(
+    //     select user_location from asset_user where user_email in 
+    //     (  select regexp_substr(asset_owner,'[^,]+', 1, level) from (select asset_owner from asset_details where asset_id=:0)
+    //     connect by regexp_substr(asset_owner, '[^,]+', 1, level) is not null) and user_location is not null) `;
+
+    let assetCreatedEmailSql = `select u.user_email,a.asset_owner, u.user_name, u.user_manager_email, a.asset_title, a.ASSET_DESCRIPTION from asset_user u, asset_details a where u.user_email = a.asset_createdby and asset_id=:0`
+
+    
     let assetCreatedEmailOptions = [];
 
     // console.log(filters)
@@ -155,7 +160,7 @@ exports.postAsset = (req, res) => {
     asset.save(type).then(result => {
         let creationResult = result
         res.json(creationResult);
-        sendEmailOnAssetCreation(result.Asset_ID, owner, assetCreatedEmailSql, assetCreatedEmailOptions, 'create')
+        sendEmailOnAssetCreation(result.Asset_ID, owner, assetCreatedEmailSql, assetCreatedEmailOptions, type)
             .then(result => {
                 console.log(result)
             })
@@ -862,4 +867,18 @@ exports.saveHelpAndSupport = (req, res) => {
     Asset.SaveHelpAndSupportModal(req.body).then(result => {
         res.json(result);
     })
+}
+
+
+exports.getOwnerNameEmailList=(assetId)=>{
+        const connection = getDb();
+        let rectificationAssetOwnerSql = `select user_name as owner_name,user_email as owner_email,user_manager_email as owner_manager from asset_user where user_email in(
+        select regexp_substr(asset_owner,'[^,]+', 1, level) from (select asset_owner from asset_details where asset_id=:0)
+        connect by regexp_substr(asset_owner, '[^,]+', 1, level) is not null)`;
+        let rectificationAssetOwnerOptions = [];
+        rectificationAssetOwnerOptions.push(assetId);
+        return connection.execute(rectificationAssetOwnerSql, rectificationAssetOwnerOptions, {
+            outFormat: oracledb.OBJECT
+        })
+    
 }

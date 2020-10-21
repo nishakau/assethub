@@ -36,19 +36,19 @@ exports.addAssetReviewNote = (req, res) => {
                     // generateNotification(assetId);
                     res.json({ "status": "The asset has been approved successfully." });
                 }
-                else if (asset_status === 'Pending Rectification') {
+                else if (asset_status === 'Pending Rectification' || asset_status === 'Manager Rectification') {
                     // sendEmailForRectification(assetId);
                     res.json({ "status": "The asset has been sent for rectification with your valuable inputs." })
-                    sendEmailForAssetStatusChange(assetId, 'rectification');
+                    sendEmailForAssetStatusChange(assetId, 'Sent for rectification');
                 }
                 else if (asset_status === 'Reject') {
                     res.json({ "status": "The asset has been rejected." })
-                    sendEmailForAssetStatusChange(assetId, 'rejected');
+                    sendEmailForAssetStatusChange(assetId, 'Asset have been rejected');
 
                 }
                 else if (asset_status === 'manager_approved') {
                     res.json({ "status": "Asset has been sent for 2nd level approval." })
-                    sendEmailForAssetStatusChange(assetId, '2nd level approval');
+                    sendEmailForAssetStatusChange(assetId, 'Your asset have been approved by manager and submitted for next level of approval');
 
                 }
             })
@@ -60,52 +60,25 @@ exports.addAssetReviewNote = (req, res) => {
 }
 
 const sendEmailForAssetStatusChange = (assetId, status) => {
-    let reviewNoteHtml = `<table border=1> 
-                            <tr>
-                            <th>SECTION </th>
-                            <th>REVIEW NOTE </th>
-                            </tr>`;
+    let AssetTitle;
+    let AssetDescription;
+    let AssetCreatedBy;
+    let AssetCreatedDate;
     let asset_reviewer;
     let asset_owners, asset_owners_managers, owners_managers_combined_list, asset_owners_name;
-    getReviewerAndAssetDetails(assetId)
+    getAssetInformatioForEmail(assetId)
         .then(result => {
-
-            if (result.rows.length > 0) {
-                asset_reviewer_name = result.rows.map(reviewer => reviewer.USER_NAME);
-                asset_reviewer_name = asset_reviewer_name.join(',');
-            }
-            else if (result.rows[0] != undefined) {
-                asset_reviewer_name = result.rows[0].USER_NAME;
-            } else {
-                console.log("no reviewer found to notify");
-                return;
-            }
             const review_comment = JSON.parse(result.rows[0].ASSET_REVIEW_NOTE);
-            if (review_comment.length > 0) {
-                review_comment.forEach(rc => {
-                    reviewNoteHtml += `
-               
-                <tr>
-                    <td> ${rc.section} </td>
-                    <td> ${rc.note} </td>
-                </tr> `
-                })
-                reviewNoteHtml += `</table>`
-                console.log(reviewNoteHtml)
-            }
-            else {
-                reviewNoteHtml += `<table border=1 style="padding:5px">
-                                <tr>
-                                    <th>SECTION </th>
-                                    <th>REVIEW NOTE </th>
-                                </tr>
-                                <tr>
-                                    <td> ${review_comment[0].section} </td>
-                                    <td> ${review_comment[0].note} </td>
-                                </tr>
-                            </table>`
-            }
-            return reviewNoteHtml;
+            
+                AssetTitle = result.rows[0].ASSET_TITLE;
+                AssetDescription = result.rows[0].ASSET_DESCRIPTION;
+                AssetCreatedBy = result.rows[0].USER_NAME+"("+result.rows[0].USER_EMAIL+")";
+                AssetCreatedDate=result.rows[0].ASSET_CREATED_DATE;
+
+            
+            status +=`<br/><h3><u>Asset Information</u></h3><br/><br/><b>Asset Title:</b>${AssetTitle}<br/><b>Asset Description</b>:${AssetDescription}<br/><b>Asset Created By:</b>${AssetCreatedBy}<br/><b>Created On:</b>${AssetCreatedDate}<br/>`;
+         
+           
         })
         .then(result => {
             getOwnerEmails(assetId)
@@ -123,42 +96,38 @@ const sendEmailForAssetStatusChange = (assetId, status) => {
                         console.log("no reviewer found to notify");
                         return;
                     }
+                    status +="<br/><br/><i>Email will be sent to Owners of the asset "+asset_owners+"<br/><i><b style='color:red'>Note</b>: You have received this email notification because you are one of the owners of this asset.</i>";
                     return asset_owners;
                 })
                 .then(result => {
-                    getOwnerManagerEmail(assetId)
-                        .then(result => {
-                            console.log(result)
-
-                            if (result.rows.length > 1) {
-                                asset_owners_managers = result.rows.map(o => o.USER_MANAGER_EMAIL)
-                                asset_owners_managers = asset_owners_managers.join(';')
-                            }
-                            else if (result.rows.length === 1) {
-                                asset_owners_managers = result.rows[0].USER_MANAGER_EMAIL;
-                            }
-                            else {
-                                asset_owners_managers = '';
-                            }
-
-                            return asset_owners_managers;
-                        })
-                        .then(result => {
-                            axios.post('https://apex.oracle.com/pls/apex/ldap_info/asset/sendemailonrectification/sendrectificationmail', {
-                                asset_reviewer_name: asset_reviewer_name,
-                                asset_comments: reviewNoteHtml,
-                                asset_owners_mail: asset_owners,
-                                asset_owners_name: asset_owners_name,
-                                asset_managers: asset_owners_managers,
-                                status: status
-                            })
-                                .then(response => {
-                                    console.log(response)
-                                })
-                        })
+                    axios.get('https://apex.oracle.com/pls/apex/agsspace/despatchemail/send', {
+                        headers:{
+                            mail_subj:`Asset Status changed`,
+                            mail_to:`nishant.k.kaushik@oracle.com`,
+                            mail_body:status
+                        }
+                    }).then(
+                        ()=>{
+                            console.log("EMAIL SENT-------------=============?????");
+                        },
+                        (err)=>{
+                            console.log("FAILED TO SEND EMAIL");
+                        }
+                    )
                 })
         })
 
+}
+
+
+const getAssetInformatioForEmail = (assetId) => {
+    const connection = getDb();
+    let rectificationReviewerAndAssetDetailsSql =`select u.user_email,a.ASSET_REVIEW_NOTE,a.asset_owner, u.user_name, u.user_manager_email, a.asset_title,a.asset_created_date, a.ASSET_DESCRIPTION from asset_user u, asset_details a where u.user_email = a.asset_createdby and asset_id=:0`;
+    let rectificationReviewerAndAssetDetailsOptions = [];
+    rectificationReviewerAndAssetDetailsOptions.push(assetId);
+    return connection.execute(rectificationReviewerAndAssetDetailsSql, rectificationReviewerAndAssetDetailsOptions, {
+        outFormat: oracledb.OBJECT
+    })
 }
 
 

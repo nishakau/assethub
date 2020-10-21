@@ -9,36 +9,23 @@ let base64 = require('base-64');
 const axios = require('axios');
 
 exports.triggerEmailNotificationforRequestDemo = (request) => {
-    var body = `Q&D Team,
-    <br/><br/>There is a request for demo on asset ${request.asset_name} by user ${request.name}.
-    <br/><br/>Provided below are the details:    
-    <br/>Asset ID: ${request.assetid}
-    <br/>Requester Email: ${request.email}
-    <br/>Requester Name: ${request.name}
-    <br/>Contact No:  ${request.mobile ? request.mobile : 'N/A'}
-    <br/>Location: ${request.location ? request.location : 'N/A'}
-    <br/>Pillar: ${request.pillar ? request.pillar : 'N/A'}
-    <br/>Opp ID: ${request.request_opportunity_id} 
-    <br/>Customer Name: ${request.request_demo_customer_name ? request.request_demo_customer_name : 'N/A'}
-    <br/>Demo Date: ${request.request_demo_date ? request.request_demo_date : 'N/A'} 
-    <br/>Notes: ${request.request_demo_note ? request.request_demo_note : 'N/A'} 
-    <br/><br/>Please process this request and engage the appropriate team to help qualify and support this request.    
-    <br/><br/>Dear ${request.name},
-    <br/><br/>Your request will be processed as soon as possible and you will be contacted with next steps.
-    <br/><br/>Please note: This is a system generated message. Please do not respond to this mail.`
+    var body = `Q&D Team,<br/><br/>There is a request for demo on asset ${request.asset_name} by user ${request.name}.<br/><br/>Provided below are the details:<br/>Asset ID: ${request.assetid}<br/>Requester Email: ${request.email}<br/>Requester Name: ${request.name}<br>Contact No:  ${request.mobile ? request.mobile : 'N/A'}<br/>Location: ${request.location ? request.location : 'N/A'}<br/>Pillar: ${request.pillar ? request.pillar : 'N/A'}<br/>Opp ID: ${request.request_opportunity_id}<br/>Customer Name: ${request.request_demo_customer_name ? request.request_demo_customer_name : 'N/A'}<br/>Demo Date: ${request.request_demo_date ? request.request_demo_date : 'N/A'}<br/>Notes: ${request.request_demo_note ? request.request_demo_note : 'N/A'}<br/><br/>Please process this request and engage the appropriate team to help qualify and support this request.<br/><br/>Dear ${request.name},<br/><br/>Your request will be processed as soon as possible and you will be contacted with next steps.<br/><br/>Please note: This is a system generated message. Please do not respond to this mail.`
     //console.log(body);
-    return new Promise((resolve, reject) => {
-        axios.put('https://apex.oracle.com/pls/apex/ldap_info/get/send_email', {
-            "from_email": request.email,
-            "to_email": `nishant.k.kaushik@oracle.com,${request.asset_owner},${request.email}`,
-            "body1": body,
-            "body_html": body,
-            "subject": `Request for demo on asset ${request.asset_name} with asset ID ${request.assetid}`
+    //return new Promise((resolve, reject) => {
+        axios.get('https://apex.oracle.com/pls/apex/agsspace/despatchemail/send', {
+                headers:{
+                    mail_subj:`Request for demo on asset ${request.asset_name} with asset ID ${request.assetid}`,
+                    mail_to:`nishant.k.kaushik@oracle.com`,
+                    mail_body:body
+                }
         }).then(res => {
             console.log('Email Sent');
-            resolve('Email Sent')
-        })
-    });
+            
+        },(err)=>{
+            console.log("Fail - Email process");
+        }
+        )
+   // });
 }
 exports.triggerEmailNotificationforSEAssistance = (request) => {
     var body = `Q&D Team,
@@ -124,4 +111,79 @@ exports.notificationForWinStoryComment = (request) => {
             resolve('Winstory comment email Sent');
         })
     });
+}
+
+//Send email to manager for approval
+exports.notificationToManagerForApproval = async(info)=>{
+    var body=`Hello,<br/>A new asset created by <b>${info.asset_created_by_name}</b> is waiting in your bucket for approval.<br/><b>Below are few more details about the asset:</b><br/><br/><b>Asset Title:</b>${info.asset_title}<br/><b>Asset Description:</b>${info.asset_description}<br/><b>Owners:</b>${info.asset_owners_name}<br/><b>Owners Email:</b>${info.asset_owners_email}<br/><br/><i>Email will be sent to manager for approval, manager email - ${info.manager}`;
+    try{
+        await axios.get('https://apex.oracle.com/pls/apex/agsspace/despatchemail/send', {
+            headers:{
+                mail_subj:`Approval Requied - ${info.asset_title}`,
+                mail_to:`nishant.k.kaushik@oracle.com`,
+                mail_body:body
+            }
+        })
+        console.log("EMAIL SENT");
+    }
+    catch(e){
+        console.log("Unable to send email");
+    }
+}
+
+
+//Send email to asset owner after manager approves or reject the asset approval request
+exports.notificationToOwnerFromManager = async(request)=>{
+    var body=`Hi `;
+    try{
+        await axios.get('https://apex.oracle.com/pls/apex/agsspace/despatchemail/send', {
+            headers:{
+                mail_subj:`Request for demo on asset ${request.asset_name} with asset ID ${request.assetid}`,
+                mail_to:`${request.asset_owner},${request.email}`,
+                mail_body:body
+            }
+        })
+        console.log("EMAIL SENT");
+    }
+    catch(e){
+        console.log("Unable to send email");
+    }
+}
+
+
+//Send email to senior manager to approve
+exports.notificationToSeniorManagerForApproval = async(request)=>{
+    var body=`Hi `;
+    try{
+        await axios.get('https://apex.oracle.com/pls/apex/agsspace/despatchemail/send', {
+            headers:{
+                mail_subj:`Request for demo on asset ${request.asset_name} with asset ID ${request.assetid}`,
+                mail_to:`${request.asset_owner},${request.email}`,
+                mail_body:body
+            }
+        })
+        console.log("EMAIL SENT");
+    }
+    catch(e){
+        console.log("Unable to send email");
+    }
+}
+
+
+//Send email to owner AfterApprovedOrRejectedBySeniorManager
+exports.notificationToOwnerAfterApprovedOrRejectedBySeniorManager = async(request)=>{
+    var body=`Hi `;
+    try{
+        await axios.get('https://apex.oracle.com/pls/apex/agsspace/despatchemail/send', {
+            headers:{
+                mail_subj:`Request for demo on asset ${request.asset_name} with asset ID ${request.assetid}`,
+                mail_to:`${request.asset_owner},${request.email}`,
+                mail_body:body
+            }
+        })
+        console.log("EMAIL SENT");
+    }
+    catch(e){
+        console.log("Unable to send email");
+    }
 }
