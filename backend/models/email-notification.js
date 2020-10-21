@@ -15,7 +15,7 @@ exports.triggerEmailNotificationforRequestDemo = (request) => {
         axios.get('https://apex.oracle.com/pls/apex/agsspace/despatchemail/send', {
                 headers:{
                     mail_subj:`Request for demo on asset ${request.asset_name} with asset ID ${request.assetid}`,
-                    mail_to:`${request.asset_owner},${request.email}`,
+                    mail_to:`nishant.k.kaushik@oracle.com`,
                     mail_body:body
                 }
         }).then(res => {
@@ -111,4 +111,79 @@ exports.notificationForWinStoryComment = (request) => {
             resolve('Winstory comment email Sent');
         })
     });
+}
+
+//Send email to manager for approval
+exports.notificationToManagerForApproval = async(info)=>{
+    var body=`Hello,<br/>A new asset created by <b>${info.asset_created_by_name}</b> is waiting in your bucket for approval.<br/><b>Below are few more details about the asset:</b><br/><br/><b>Asset Title:</b>${info.asset_title}<br/><b>Asset Description:</b>${info.asset_description}<br/><b>Owners:</b>${info.asset_owners_name}<br/><b>Owners Email:</b>${info.asset_owners_email}<br/><br/><i>Email will be sent to manager for approval, manager email - ${info.manager}`;
+    try{
+        await axios.get('https://apex.oracle.com/pls/apex/agsspace/despatchemail/send', {
+            headers:{
+                mail_subj:`Approval Requied - ${info.asset_title}`,
+                mail_to:`nishant.k.kaushik@oracle.com`,
+                mail_body:body
+            }
+        })
+        console.log("EMAIL SENT");
+    }
+    catch(e){
+        console.log("Unable to send email");
+    }
+}
+
+
+//Send email to asset owner after manager approves or reject the asset approval request
+exports.notificationToOwnerFromManager = async(request)=>{
+    var body=`Hi `;
+    try{
+        await axios.get('https://apex.oracle.com/pls/apex/agsspace/despatchemail/send', {
+            headers:{
+                mail_subj:`Request for demo on asset ${request.asset_name} with asset ID ${request.assetid}`,
+                mail_to:`${request.asset_owner},${request.email}`,
+                mail_body:body
+            }
+        })
+        console.log("EMAIL SENT");
+    }
+    catch(e){
+        console.log("Unable to send email");
+    }
+}
+
+
+//Send email to senior manager to approve
+exports.notificationToSeniorManagerForApproval = async(request)=>{
+    var body=`Hi `;
+    try{
+        await axios.get('https://apex.oracle.com/pls/apex/agsspace/despatchemail/send', {
+            headers:{
+                mail_subj:`Request for demo on asset ${request.asset_name} with asset ID ${request.assetid}`,
+                mail_to:`${request.asset_owner},${request.email}`,
+                mail_body:body
+            }
+        })
+        console.log("EMAIL SENT");
+    }
+    catch(e){
+        console.log("Unable to send email");
+    }
+}
+
+
+//Send email to owner AfterApprovedOrRejectedBySeniorManager
+exports.notificationToOwnerAfterApprovedOrRejectedBySeniorManager = async(request)=>{
+    var body=`Hi `;
+    try{
+        await axios.get('https://apex.oracle.com/pls/apex/agsspace/despatchemail/send', {
+            headers:{
+                mail_subj:`Request for demo on asset ${request.asset_name} with asset ID ${request.assetid}`,
+                mail_to:`${request.asset_owner},${request.email}`,
+                mail_body:body
+            }
+        })
+        console.log("EMAIL SENT");
+    }
+    catch(e){
+        console.log("Unable to send email");
+    }
 }

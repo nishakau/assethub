@@ -41,7 +41,7 @@ exports.fetchAssets = (user_email, host) => {
                     ASSET_OWNER,
                     ASSET_STATUS,
                     ASSET_REVIEW_NOTE
-                    from asset_details d,asset_user u where d.asset_owner = u.user_email and d.asset_status in ('Live','Pending Review','Reject','Pending Rectification','manager_approved','Manager Rectification')`;
+                    from asset_details d,asset_user u where d.asset_createdby = u.user_email and d.asset_status in ('Live','Pending Review','Reject','Pending Rectification','manager_approved','Manager Rectification')`;
                     //and u.USER_EMAIL=:USER_EMAIL`;
                 if (role == 'reviewer') {
                     fetchPendingReviewAssetsSql += ` and d.asset_location = u.user_location`;
