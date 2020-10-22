@@ -101,7 +101,13 @@ exports.postAsset = (req, res) => {
     if(type==undefined||type==null||type.trim().length==0||type.trim()=='save'){
         type='Saved';
     }else if(type.trim()=='submit'){
-        type='Pending Review';
+        if(req.body.user_role == 'manager'){
+            type="manager_approved";
+
+        }else{
+            type='Pending Review';
+        }
+        
     }else{
         type='Saved';
     }
