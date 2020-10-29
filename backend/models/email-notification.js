@@ -15,7 +15,7 @@ exports.triggerEmailNotificationforRequestDemo = (request) => {
         axios.get('https://apex.oracle.com/pls/apex/agsspace/despatchemail/send', {
                 headers:{
                     mail_subj:`Request for demo on asset ${request.asset_name} with asset ID ${request.assetid}`,
-                    mail_to:`nishant.k.kaushik@oracle.com`,
+                    mail_to:`${request.asset_owner},${request.email}`,
                     mail_body:body
                 }
         }).then(res => {
@@ -115,12 +115,13 @@ exports.notificationForWinStoryComment = (request) => {
 
 //Send email to manager for approval
 exports.notificationToManagerForApproval = async(info)=>{
-    var body=`Hello,<br/>A new asset created by <b>${info.asset_created_by_name}</b> is waiting in your bucket for approval.<br/><b>Below are few more details about the asset:</b><br/><br/><b>Asset Title:</b>${info.asset_title}<br/><b>Asset Description:</b>${info.asset_description}<br/><b>Owners:</b>${info.asset_owners_name}<br/><b>Owners Email:</b>${info.asset_owners_email}<br/><br/><i>Email will be sent to manager for approval, manager email - ${info.manager}`;
+    var body=`Hello,<br/>A new asset created by <b>${info.asset_created_by_name}</b> is waiting in your bucket for approval.<br/><b>Below are few more details about the asset:<br/><br/><b>Asset Title:</b><br/>${info.asset_title}<br/><b>Asset Description:</b>${info.asset_description}<br/><b>Owners:</b>${info.asset_owners_name}<br/><b>Owners Email:</b>${info.asset_owners_email}<br/><br/>`;
+    
     try{
         await axios.get('https://apex.oracle.com/pls/apex/agsspace/despatchemail/send', {
             headers:{
                 mail_subj:`Approval Requied - ${info.asset_title}`,
-                mail_to:`nishant.k.kaushik@oracle.com`,
+                mail_to:info.manager,
                 mail_body:body
             }
         })

@@ -59,9 +59,9 @@ const sendEmailOnAssetCreation = (assetId, asset_owner, assetCreatedEmailSql, as
                     .then(result => {
                         if (result.rows.length > 0) {
                             asset_owners_name = result.rows.map(o => o.USER_NAME);
-                            asset_owners_name = asset_owners_name.join(";");
+                            asset_owners_name = asset_owners_name.join(",");
                             asset_owners_email = result.rows.map(o=>o.USER_EMAIL);
-                            asset_owners_email =asset_owners_email.join(";");
+                            asset_owners_email =asset_owners_email.join(",");
                             user_manager_email = result.rows.map(o=>o.USER_MANAGER_EMAIL);
                          
                         }

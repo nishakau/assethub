@@ -85,9 +85,9 @@ const sendEmailForAssetStatusChange = (assetId, status) => {
                 .then(result => {
                     if (result.rows.length > 0) {
                         asset_owners = result.rows.map(o => o.USER_EMAIL)
-                        asset_owners = asset_owners.join(';')
+                        asset_owners = asset_owners.join(',')
                         asset_owners_name = result.rows.map(o => o.USER_NAME)
-                        asset_owners_name = asset_owners_name.join(';')
+                        asset_owners_name = asset_owners_name.join(',')
                     }
                     else if (result.rows[0] != undefined) {
                         asset_owners = result.rows[0].USER_EMAIL;
@@ -96,14 +96,14 @@ const sendEmailForAssetStatusChange = (assetId, status) => {
                         console.log("no reviewer found to notify");
                         return;
                     }
-                    status +="<br/><br/><i>Email will be sent to Owners of the asset "+asset_owners+"<br/><i><b style='color:red'>Note</b>: You have received this email notification because you are one of the owners of this asset.</i>";
+                    status +="<br/><br/><b style='color:red'>Note</b>: You have received this email notification because you are one of the owners of this asset.</i>";
                     return asset_owners;
                 })
                 .then(result => {
                     axios.get('https://apex.oracle.com/pls/apex/agsspace/despatchemail/send', {
                         headers:{
                             mail_subj:`Asset Status changed`,
-                            mail_to:`nishant.k.kaushik@oracle.com`,
+                            mail_to:asset_owners,
                             mail_body:status
                         }
                     }).then(
