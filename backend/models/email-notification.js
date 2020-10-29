@@ -121,7 +121,7 @@ exports.notificationToManagerForApproval = async(info)=>{
         await axios.get('https://apex.oracle.com/pls/apex/agsspace/despatchemail/send', {
             headers:{
                 mail_subj:`Approval Requied - ${info.asset_title}`,
-                mail_to:info.manager,
+                mail_to:`${info.manager}`,
                 mail_body:body
             }
         })
