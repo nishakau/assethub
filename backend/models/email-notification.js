@@ -114,7 +114,7 @@ exports.notificationForWinStoryComment = (request) => {
 }
 
 //Send email to manager for approval
-exports.notificationToManagerForApproval = async(info)=>{
+exports.notificationForApproval = async(info)=>{
     var body=`Hello,<br/>A new asset created by <b>${info.asset_created_by_name}</b> is waiting in your bucket for approval.<br/><b>Below are few more details about the asset:<br/><br/><b>Asset Title:</b><br/>${info.asset_title}<br/><b>Asset Description:</b>${info.asset_description}<br/><b>Owners:</b>${info.asset_owners_name}<br/><b>Owners Email:</b>${info.asset_owners_email}<br/><br/>`;
     
     try{

@@ -81,7 +81,7 @@ const sendEmailOnAssetCreation = (assetId, asset_owner, assetCreatedEmailSql, as
                         info.manager = asset_reviewer_email;
                         console.log("EMAIL HEADER ");
                         console.log(JSON.stringify(info));
-                        emailController.notificationToManagerForApproval(info);
+                        emailController.notificationForApproval(info);
                        
                     })
                     .catch(err => {

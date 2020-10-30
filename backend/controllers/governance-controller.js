@@ -3,6 +3,7 @@ const getDb = require('../database/db').getDb;
 const userController= require('../controllers/user-controller');
 const oracledb = require('oracledb');
 const axios = require('axios');
+const emailController = require("../models/email-notification");
 
 
 exports.getAssets = (req, res) => {
@@ -65,6 +66,7 @@ const sendEmailForAssetStatusChange = (assetId, status) => {
     let AssetCreatedBy;
     let AssetCreatedDate;
     let asset_reviewer;
+    let AssetLOBLeader;
     let asset_owners, asset_owners_managers, owners_managers_combined_list, asset_owners_name;
     getAssetInformatioForEmail(assetId)
         .then(result => {
@@ -74,7 +76,7 @@ const sendEmailForAssetStatusChange = (assetId, status) => {
                 AssetDescription = result.rows[0].ASSET_DESCRIPTION;
                 AssetCreatedBy = result.rows[0].USER_NAME+"("+result.rows[0].USER_EMAIL+")";
                 AssetCreatedDate=result.rows[0].ASSET_CREATED_DATE;
-
+                AssetLOBLeader = result.rows[0].USER_REPORTING_LOB_LEADER;
             
             status +=`<br/><h3><u>Asset Information</u></h3><br/><br/><b>Asset Title:</b>${AssetTitle}<br/><b>Asset Description</b>:${AssetDescription}<br/><b>Asset Created By:</b>${AssetCreatedBy}<br/><b>Created On:</b>${AssetCreatedDate}<br/>`;
          
@@ -108,6 +110,17 @@ const sendEmailForAssetStatusChange = (assetId, status) => {
                         }
                     }).then(
                         ()=>{
+                            if(status == 'manager_approved'){
+                                let info ={};
+                                info.asset_created_by_name = AssetCreatedBy;
+                                info.asset_title = AssetTitle;
+                                info.asset_description=AssetDescription;
+                                info.asset_owners_name = asset_owners_name;
+                                info.asset_owners_email =asset_owners;
+                                info.manager= AssetLOBLeader;
+                                emailController.notificationForApproval(info);
+                            }
+                           
                             console.log("EMAIL SENT-------------=============?????");
                         },
                         (err)=>{
@@ -122,7 +135,7 @@ const sendEmailForAssetStatusChange = (assetId, status) => {
 
 const getAssetInformatioForEmail = (assetId) => {
     const connection = getDb();
-    let rectificationReviewerAndAssetDetailsSql =`select u.user_email,a.ASSET_REVIEW_NOTE,a.asset_owner, u.user_name, u.user_manager_email, a.asset_title,a.asset_created_date, a.ASSET_DESCRIPTION from asset_user u, asset_details a where u.user_email = a.asset_createdby and asset_id=:0`;
+    let rectificationReviewerAndAssetDetailsSql =`select u.user_email,a.ASSET_REVIEW_NOTE,a.asset_owner, u.user_name, u.user_manager_email,u.user_reporting_lob_leader, a.asset_title,a.asset_created_date, a.ASSET_DESCRIPTION from asset_user u, asset_details a where u.user_email = a.asset_createdby and asset_id=:0`;
     let rectificationReviewerAndAssetDetailsOptions = [];
     rectificationReviewerAndAssetDetailsOptions.push(assetId);
     return connection.execute(rectificationReviewerAndAssetDetailsSql, rectificationReviewerAndAssetDetailsOptions, {
