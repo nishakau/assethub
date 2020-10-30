@@ -40,16 +40,16 @@ exports.addAssetReviewNote = (req, res) => {
                 else if (asset_status === 'Pending Rectification' || asset_status === 'Manager Rectification') {
                     // sendEmailForRectification(assetId);
                     res.json({ "status": "The asset has been sent for rectification with your valuable inputs." })
-                    sendEmailForAssetStatusChange(assetId, 'Sent for rectification');
+                    sendEmailForAssetStatusChange(assetId, 'Sent for rectification',review_note);
                 }
                 else if (asset_status === 'Reject') {
                     res.json({ "status": "The asset has been rejected." })
-                    sendEmailForAssetStatusChange(assetId, 'Asset have been rejected');
+                    sendEmailForAssetStatusChange(assetId, 'Asset have been rejected',review_note);
 
                 }
                 else if (asset_status === 'manager_approved') {
                     res.json({ "status": "Asset has been sent for 2nd level approval." })
-                    sendEmailForAssetStatusChange(assetId, 'Your asset have been approved by manager and submitted for next level of approval');
+                    sendEmailForAssetStatusChange(assetId, 'Your asset have been approved by manager and submitted for next level of approval',review_note);
 
                 }
             })
@@ -60,7 +60,7 @@ exports.addAssetReviewNote = (req, res) => {
     }
 }
 
-const sendEmailForAssetStatusChange = (assetId, status) => {
+const sendEmailForAssetStatusChange = (assetId, status,review_note) => {
     let AssetTitle;
     let AssetDescription;
     let AssetCreatedBy;
@@ -79,7 +79,7 @@ const sendEmailForAssetStatusChange = (assetId, status) => {
                 AssetCreatedDate=result.rows[0].ASSET_CREATED_DATE;
                 AssetLOBLeader = result.rows[0].USER_REPORTING_LOB_LEADER;
                 AssetStatus = result.rows[0].ASSET_STATUS;
-            status +=`<br/><h3><u>Asset Information</u></h3><br/><br/><b>Asset Title:</b>${AssetTitle}<br/><b>Asset Description</b>:${AssetDescription}<br/><b>Asset Created By:</b>${AssetCreatedBy}<br/><b>Created On:</b>${AssetCreatedDate}<br/>`;
+            status +=`<b>Review Note</b>:${review_note}<br/><h3><u>Asset Information</u></h3><br/><br/><b>Asset Title:</b>${AssetTitle}<br/><b>Asset Description</b>:${AssetDescription}<br/><b>Asset Created By:</b>${AssetCreatedBy}<br/><b>Created On:</b>${AssetCreatedDate}<br/>`;
          
            
         })
