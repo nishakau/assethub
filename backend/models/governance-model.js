@@ -9,6 +9,7 @@ exports.fetchAssets = (user_email, host) => {
     return new Promise((resolve, reject) => {
         let checkForReviewerSql = `select USER_ROLE from asset_user where USER_EMAIL=:USER_EMAIL`;
         let checkForReviewerOptions = [user_email]
+        let fetchPendingReviewAssetsOptions = [user_email];
         connection.query(checkForReviewerSql, checkForReviewerOptions,
             {
                 outFormat: oracledb.OBJECT
@@ -43,19 +44,18 @@ exports.fetchAssets = (user_email, host) => {
                     ASSET_REVIEW_NOTE
                     from asset_details d,asset_user u where d.asset_createdby = u.user_email and d.asset_status in ('Live','Pending Review','Reject','Pending Rectification','manager_approved','Manager Rectification')`;
                     //and u.USER_EMAIL=:USER_EMAIL`;
-                if (role == 'reviewer') {
-                    fetchPendingReviewAssetsSql += ` and d.asset_location = u.user_location`;
-                }
-                else if(role=='manager'){
+                if(role=='manager'){
                     fetchPendingReviewAssetsSql += ` and u.user_manager_email=:USER_EMAIL`;
                      
                 }
                 else if(role=='vp'){
-                    fetchPendingReviewAssetsSql+= ` and user_reporting_lob_leader=:USER_EMAIL`
+                    fetchPendingReviewAssetsSql+= ` and user_reporting_lob_leader=:USER_EMAIL`;
+                }else if(role=='admin'){
+                    fetchPendingReviewAssetsOptions.pop();
                 }
                 fetchPendingReviewAssetsSql +=` order by d.asset_modified_date desc`;
                 //let fetchPendingReviewAssetsOptions = [user_email,user_email];
-                let fetchPendingReviewAssetsOptions = [user_email];
+                
                 connection.query(fetchPendingReviewAssetsSql, fetchPendingReviewAssetsOptions,
                     {
                         outFormat: oracledb.OBJECT
